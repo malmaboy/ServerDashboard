@@ -1,0 +1,4 @@
+interface:
+  display_name: "Server Ops"
+  short_description: "Handle Linux servers, networking, and operations"
+  default_prompt: "Use -ops to investigate, configure, or harden a server."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Software Architect"
+  short_description: "Design systems, boundaries, and technical direction"
+  default_prompt: "Use $software-architect to design or review the architecture for this system."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Proxmox Ops"
+  short_description: "Operate Proxmox hosts, VMs, storage, and clusters"
+  default_prompt: "Use -ops to diagnose or plan Proxmox virtualization work."

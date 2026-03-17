@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Quality"
+  short_description: "Review maintainability, standards, and quality risks"
+  default_prompt: "Use $code-quality to review this code for maintainability and quality risks."

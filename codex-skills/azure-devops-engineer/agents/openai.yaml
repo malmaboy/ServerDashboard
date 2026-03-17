@@ -1,0 +1,4 @@
+interface:
+  display_name: "Azure DevOps Engineer"
+  short_description: "Handle Azure DevOps pipelines, repos, and delivery"
+  default_prompt: "Use $azure-devops-engineer to plan or troubleshoot an Azure DevOps task."

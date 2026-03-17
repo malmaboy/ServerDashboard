@@ -1,0 +1,29 @@
+<main class="dashboard-shell">
+  <section *ngIf="loading" class="state-card">
+    <p>A carregar dashboard...</p>
+  </section>
+
+  <section *ngIf="error" class="state-card error">
+    <p>{{ error }}</p>
+  </section>
+
+  <section *ngIf="!loading && !error" class="cards-grid">
+    <article *ngFor="let app of apps; trackBy: trackByUrl" class="app-card">
+      <div class="image-wrap">
+        <img [src]="app.imageUrl" [alt]="app.name" />
+        <span class="status-pill">{{ app.status }}</span>
+      </div>
+
+      <div class="card-body">
+        <div>
+          <h2>{{ app.name }}</h2>
+          <p>{{ app.description }}</p>
+        </div>
+
+        <a class="app-link" [href]="app.url" target="_blank" rel="noreferrer">
+          Abrir app
+        </a>
+      </div>
+    </article>
+  </section>
+</main>

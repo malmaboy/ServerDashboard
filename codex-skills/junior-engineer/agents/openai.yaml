@@ -1,0 +1,4 @@
+interface:
+  display_name: "Junior Engineer"
+  short_description: "Work step by step with extra clarity and guidance"
+  default_prompt: "Use $junior-engineer to explain and execute this task step by step."

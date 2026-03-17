@@ -1,0 +1,4 @@
+interface:
+  display_name: "Python Engineer"
+  short_description: "Build, debug, and improve Python applications"
+  default_prompt: "Use $python-engineer to implement or troubleshoot a Python task."
