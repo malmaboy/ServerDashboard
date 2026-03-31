@@ -1,4 +1,0 @@
-interface:
-  display_name: "Software Engineering"
-  short_description: "Plan, review, and ship software changes"
-  default_prompt: "Use -engineering to analyze, plan, and implement a software engineering task."

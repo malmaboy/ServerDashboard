@@ -1,4 +1,0 @@
-interface:
-  display_name: "Dotnet Engineer"
-  short_description: "Build, debug, and improve .NET applications"
-  default_prompt: "Use -engineer to implement or troubleshoot a .NET task."

@@ -1,38 +1,47 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   imports: [CommonModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
-export class AppComponent {
+export class AppComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
 
   protected apps: AppCard[] = [];
   protected loading = true;
   protected error = '';
+  private refreshInterval: ReturnType<typeof setInterval> | null = null;
 
-  constructor() {
+  ngOnInit(): void {
     this.loadApps();
+    this.refreshInterval = setInterval(() => this.loadApps(), 30000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.refreshInterval) clearInterval(this.refreshInterval);
   }
 
   protected trackByUrl(_: number, app: AppCard): string {
     return app.url;
   }
 
-  private loadApps(): void {
-    const apiUrl = '/api/apps';
+  protected isOnline(status: string): boolean {
+    return status === 'Online';
+  }
 
-    this.http.get<AppResponse>(apiUrl).subscribe({
+  private loadApps(): void {
+    this.http.get<AppResponse>('/api/apps').subscribe({
       next: ({ apps }) => {
         this.apps = apps;
         this.loading = false;
       },
       error: () => {
-        this.error = 'Nao foi possivel carregar as apps do backend.';
+        this.error = 'Could not load apps from the backend.';
         this.loading = false;
       }
     });

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Orchestrator"
-  short_description: "Analyze, plan, and route work across Codex skills"
-  default_prompt: "Use $orchestrator to analyze the problem, build a plan, and choose the right Codex skills."

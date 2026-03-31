@@ -1,4 +1,0 @@
-interface:
-  display_name: "Tester Engineer"
-  short_description: "Design tests, find regressions, and improve coverage"
-  default_prompt: "Use $tester-engineer to design tests or investigate a regression."

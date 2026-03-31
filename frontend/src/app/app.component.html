@@ -1,6 +1,6 @@
 <main class="dashboard-shell">
   <section *ngIf="loading" class="state-card">
-    <p>A carregar dashboard...</p>
+    <p>Loading dashboard...</p>
   </section>
 
   <section *ngIf="error" class="state-card error">
@@ -11,7 +11,9 @@
     <article *ngFor="let app of apps; trackBy: trackByUrl" class="app-card">
       <div class="image-wrap">
         <img [src]="app.imageUrl" [alt]="app.name" />
-        <span class="status-pill">{{ app.status }}</span>
+        <span class="status-pill" [class.online]="isOnline(app.status)" [class.offline]="!isOnline(app.status)">
+          {{ app.status }}
+        </span>
       </div>
 
       <div class="card-body">
@@ -21,7 +23,7 @@
         </div>
 
         <a class="app-link" [href]="app.url" target="_blank" rel="noreferrer">
-          Abrir app
+          Open app
         </a>
       </div>
     </article>

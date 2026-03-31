@@ -1,4 +1,0 @@
-interface:
-  display_name: "SSH Linux Ops"
-  short_description: "Troubleshoot Linux systems over SSH safely"
-  default_prompt: "Use $ssh-linux-ops to investigate or plan Linux work over SSH."

@@ -119,6 +119,16 @@ h1 {
   background: #67e8f9;
 }
 
+.status-pill.online {
+  background: #22c55e;
+  color: #fff;
+}
+
+.status-pill.offline {
+  background: #ef4444;
+  color: #fff;
+}
+
 .card-body {
   display: flex;
   flex-direction: column;

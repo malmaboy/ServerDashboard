@@ -4,46 +4,75 @@ from typing import TypedDict
 class AppCard(TypedDict):
     name: str
     url: str
+    healthUrl: str
+    healthType: str  # "http" or "tcp:<port>"
     imageUrl: str
     description: str
-    status: str
 
 
-# Edita esta lista com as tuas apps deployed no Proxmox.
 APP_CARDS: list[AppCard] = [
-    {
-        "name": "Portainer",
-        "url": "http://192.168.1.117:9000/#!/home",
-        "imageUrl": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80",
-        "description": "Centro rapido para gerir containers, stacks Docker e operacoes do teu homelab num unico painel.",
-        "status": "Online",
-    },
-    {
-        "name": "Garden Assistant",
-        "url": "http://192.168.1.117:3001/home",
-        "imageUrl": "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=1400&q=80",
-        "description": "Painel dedicado ao jardim com automacoes, sensores e controlo diario mais claro e acessivel.",
-        "status": "Online",
-    },
     {
         "name": "Proxmox VE",
         "url": "https://192.168.1.200:8006/",
+        "healthUrl": "https://192.168.1.200:8006/",
+        "healthType": "http",
         "imageUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1400&q=80",
-        "description": "Consola principal da tua infraestrutura virtualizada para gerir VMs, LXCs, storage e rede.",
-        "status": "Online",
+        "description": "Main console for your virtualised infrastructure to manage VMs, LXCs, storage and networking.",
+    },
+    {
+        "name": "Portainer",
+        "url": "http://192.168.1.100:9000/#!/home",
+        "healthUrl": "http://192.168.1.100:9000/api/status",
+        "healthType": "http",
+        "imageUrl": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80",
+        "description": "Quick hub to manage containers, Docker stacks and homelab operations in a single panel.",
+    },
+    {
+        "name": "Garden Assistant",
+        "url": "http://192.168.1.100:3001/home",
+        "healthUrl": "http://192.168.1.100:3001/",
+        "healthType": "http",
+        "imageUrl": "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=1400&q=80",
+        "description": "Dedicated garden panel with automations, sensors and daily control in one place.",
+    },
+    {
+        "name": "Home Assistant",
+        "url": "http://192.168.1.101:8123/",
+        "healthUrl": "http://192.168.1.101:8123/",
+        "healthType": "http",
+        "imageUrl": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1400&q=80",
+        "description": "Smart home hub with quick access to automations, devices and daily routines.",
     },
     {
         "name": "NAS Dashboard",
         "url": "http://192.168.1.210:8080/",
+        "healthUrl": "http://192.168.1.210:8080/",
+        "healthType": "http",
         "imageUrl": "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1400&q=80",
-        "description": "Vista central para armazenamento, utilizacao de discos e saude geral do teu servidor NAS.",
-        "status": "Online",
+        "description": "Central view for storage, disk usage and overall health of your NAS server.",
     },
     {
-        "name": "Home Assistant",
-        "url": "http://192.168.1.121:8123/",
-        "imageUrl": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1400&q=80",
-        "description": "Hub da casa inteligente com acesso rapido a automacoes, dispositivos e rotinas do dia a dia.",
-        "status": "Online",
+        "name": "Pi-hole",
+        "url": "http://192.168.1.220/admin",
+        "healthUrl": "http://192.168.1.220/admin",
+        "healthType": "http",
+        "imageUrl": "https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=1400&q=80",
+        "description": "Network-wide ad blocker and DNS server. Shows query statistics and block lists.",
+    },
+    {
+        "name": "Infisical",
+        "url": "http://192.168.1.211/organization/projects",
+        "healthUrl": "http://192.168.1.211/",
+        "healthType": "http",
+        "imageUrl": "https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&w=1400&q=80",
+        "description": "Secret management and environment variables for your homelab projects and services.",
+    },
+    {
+        "name": "Raspberry Pi",
+        "url": "ssh://user@192.168.1.120",
+        "healthUrl": "192.168.1.120:22",
+        "healthType": "tcp",
+        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80",
+        "description": "Raspberry Pi in the garage — Arduino bridge server for IoT sensors and automations.",
     },
 ]
