@@ -1,0 +1,119 @@
+name: CD - Deploy ServerDashboard
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cd-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: self-hosted
+    timeout-minutes: 60
+
+    env:
+      DEPLOY_DIR: $HOME/deploy/serverdashboard
+      COMPOSE_PROJECT_NAME: serverdashboard
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          clean: true
+
+      - name: Prepare deploy folder
+        run: |
+          set -euo pipefail
+          mkdir -p "${DEPLOY_DIR}"
+          rsync -a --delete \
+            --exclude ".git/" \
+            --exclude ".github/" \
+            --exclude "frontend/node_modules/" \
+            ./ "${DEPLOY_DIR}/"
+
+      - name: Verify Docker
+        run: |
+          set -euo pipefail
+          docker -v
+          docker compose version
+
+      - name: Validate Compose config
+        run: |
+          set -euo pipefail
+          cd "${DEPLOY_DIR}"
+          docker compose config -q
+
+      - name: Build images
+        run: |
+          set -euo pipefail
+          cd "${DEPLOY_DIR}"
+          docker compose build --pull
+
+      - name: Deploy containers
+        run: |
+          set -euo pipefail
+          cd "${DEPLOY_DIR}"
+          docker compose up -d --remove-orphans
+
+      - name: Health check
+        run: |
+          set -euo pipefail
+          check_url() {
+            local url="$1"
+            local retries=30
+            local sleep_seconds=2
+            for ((i=1; i<=retries; i++)); do
+              if curl -fsS "$url" >/dev/null; then
+                echo "Healthy: $url"
+                return 0
+              fi
+              echo "Waiting for $url ($i/$retries)"
+              sleep "$sleep_seconds"
+            done
+            echo "Health check failed: $url"
+            return 1
+          }
+
+          check_url "http://localhost:8000/api/health"
+          check_url "http://localhost:8081"
+
+      - name: Deployment summary
+        if: success()
+        run: |
+          {
+            echo "## 🚀 Deploy completed"
+            echo "- Branch: ${GITHUB_REF}"
+            echo "- Commit: ${GITHUB_SHA}"
+            echo "- Directory: ${DEPLOY_DIR}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Collect diagnostics on failure
+        if: failure()
+        run: |
+          set +e
+          cd "${DEPLOY_DIR}" || exit 0
+          {
+            echo "## ❌ Deploy diagnostics"
+            echo "### docker compose ps"
+            docker compose ps
+            echo
+            echo "### docker compose logs (tail 200)"
+            docker compose logs --tail=200
+          } >> "$GITHUB_STEP_SUMMARY"
+          docker compose ps || true
+          docker compose logs --tail=200 || true
+
+      - name: Cleanup unused images
+        if: always()
+        run: docker image prune -f --filter "dangling=true"
