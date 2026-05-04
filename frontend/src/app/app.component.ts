@@ -15,11 +15,17 @@ export class AppComponent implements OnInit, OnDestroy {
   protected apps: AppCard[] = [];
   protected loading = true;
   protected error = '';
+  protected gameServers: GameServer[] = [];
+  protected gameServerLoading: string | null = null;
   private refreshInterval: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
     this.loadApps();
-    this.refreshInterval = setInterval(() => this.loadApps(), 30000);
+    this.loadGameServers();
+    this.refreshInterval = setInterval(() => {
+      this.loadApps();
+      this.loadGameServers();
+    }, 30000);
   }
 
   ngOnDestroy(): void {
@@ -30,8 +36,37 @@ export class AppComponent implements OnInit, OnDestroy {
     return app.url;
   }
 
+  protected trackByGame(_: number, gs: GameServer): string {
+    return gs.game;
+  }
+
   protected isOnline(status: string): boolean {
     return status === 'Online';
+  }
+
+  protected isRunning(gs: GameServer): boolean {
+    return gs.status === 'running';
+  }
+
+  protected gsLabel(gs: GameServer): string {
+    if (gs.status === 'running') return 'Running';
+    if (gs.status === 'not_found') return 'Not Ready';
+    return 'Stopped';
+  }
+
+  protected toggleGameServer(gs: GameServer): void {
+    if (this.gameServerLoading) return;
+    this.gameServerLoading = gs.game;
+    const action = gs.status === 'running' ? 'stop' : 'start';
+    this.http.post(`/api/game-servers/${gs.game}/${action}`, {}).subscribe({
+      next: () => {
+        this.loadGameServers();
+        this.gameServerLoading = null;
+      },
+      error: () => {
+        this.gameServerLoading = null;
+      }
+    });
   }
 
   private loadApps(): void {
@@ -46,6 +81,13 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+  private loadGameServers(): void {
+    this.http.get<GameServersResponse>('/api/game-servers').subscribe({
+      next: ({ gameServers }) => { this.gameServers = gameServers; },
+      error: () => {}
+    });
+  }
 }
 
 interface AppResponse {
@@ -57,5 +99,16 @@ interface AppCard {
   url: string;
   imageUrl: string;
   description: string;
+  status: string;
+}
+
+interface GameServersResponse {
+  gameServers: GameServer[];
+}
+
+interface GameServer {
+  game: string;
+  displayName: string;
+  containerName: string;
   status: string;
 }

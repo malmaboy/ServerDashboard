@@ -5,6 +5,9 @@ services:
     container_name: proxmox-dashboard-backend
     ports:
       - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    user: root
 
   frontend:
     build:

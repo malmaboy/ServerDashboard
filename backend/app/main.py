@@ -4,12 +4,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .app_config import APP_CARDS
+from .game_servers import router as game_servers_router
 
 app = FastAPI(
     title="HomeLab Dashboard API",
     version="1.0.0",
     description="API to list and health-check homelab services.",
 )
+
+app.include_router(game_servers_router)
 
 app.add_middleware(
     CORSMiddleware,

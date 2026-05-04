@@ -28,4 +28,33 @@
       </div>
     </article>
   </section>
+
+  <section *ngIf="gameServers.length > 0" class="gs-section">
+    <h2 class="gs-section-title">Game Servers</h2>
+    <p class="gs-section-note">Only one server can run at a time — switching stops the active one automatically.</p>
+    <div class="gs-grid">
+      <article *ngFor="let gs of gameServers; trackBy: trackByGame" class="gs-card">
+        <div class="gs-card-left">
+          <div class="gs-icon" [class.gs-icon--running]="isRunning(gs)" [class.gs-icon--stopped]="!isRunning(gs) && gs.status !== 'not_found'" [class.gs-icon--notfound]="gs.status === 'not_found'">
+            <span>🎮</span>
+          </div>
+          <div>
+            <h3 class="gs-name">{{ gs.displayName }}</h3>
+            <span class="gs-badge" [class.gs-badge--running]="isRunning(gs)" [class.gs-badge--stopped]="!isRunning(gs) && gs.status !== 'not_found'" [class.gs-badge--notfound]="gs.status === 'not_found'">
+              {{ gsLabel(gs) }}
+            </span>
+          </div>
+        </div>
+        <button
+          class="gs-toggle"
+          [class.gs-toggle--start]="!isRunning(gs)"
+          [class.gs-toggle--stop]="isRunning(gs)"
+          [disabled]="gs.status === 'not_found' || gameServerLoading !== null"
+          (click)="toggleGameServer(gs)">
+          <span *ngIf="gameServerLoading !== gs.game">{{ isRunning(gs) ? 'Stop' : 'Start' }}</span>
+          <span *ngIf="gameServerLoading === gs.game" class="gs-spinner">⟳</span>
+        </button>
+      </article>
+    </div>
+  </section>
 </main>
