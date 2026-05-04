@@ -49,7 +49,7 @@
           class="gs-toggle"
           [class.gs-toggle--start]="!isRunning(gs)"
           [class.gs-toggle--stop]="isRunning(gs)"
-          [disabled]="gs.status === 'not_found' || gameServerLoading !== null"
+          [disabled]="gameServerLoading !== null"
           (click)="toggleGameServer(gs)">
           <span *ngIf="gameServerLoading !== gs.game">{{ isRunning(gs) ? 'Stop' : 'Start' }}</span>
           <span *ngIf="gameServerLoading === gs.game" class="gs-spinner">⟳</span>
