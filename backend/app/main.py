@@ -1,14 +1,26 @@
 import asyncio
+import logging
+import os
+
 import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .app_config import APP_CARDS
+from .app_config import APP_CARDS, AppCard
 from .game_servers import router as game_servers_router
+from .proxmox.nodes import get_lxcs, get_node_status, get_storage, get_vms
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s — %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+ALLOWED_ORIGIN = os.getenv("ALLOWED_ORIGIN", "*")
 
 app = FastAPI(
     title="HomeLab Dashboard API",
-    version="1.0.0",
+    version="2.0.0",
     description="API to list and health-check homelab services.",
 )
 
@@ -16,9 +28,9 @@ app.include_router(game_servers_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[ALLOWED_ORIGIN],
     allow_credentials=False,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -31,7 +43,7 @@ def health() -> dict[str, str]:
 async def _check_http(client: httpx.AsyncClient, url: str) -> bool:
     try:
         r = await client.get(url)
-        return r.status_code < 500
+        return r.status_code < 400
     except Exception:
         return False
 
@@ -48,24 +60,39 @@ async def _check_tcp(host: str, port: int) -> bool:
         return False
 
 
+async def _check_card(client: httpx.AsyncClient, card: AppCard) -> dict:
+    health_type = card.get("healthType", "http")
+    if health_type.startswith("tcp"):
+        host, port_str = card["healthUrl"].rsplit(":", 1)
+        online = await _check_tcp(host, int(port_str))
+    else:
+        online = await _check_http(client, card["healthUrl"])
+    status = "Online" if online else "Offline"
+    logger.debug("%s → %s", card["name"], status)
+    return {
+        "name": card["name"],
+        "url": card["url"],
+        "imageUrl": card["imageUrl"],
+        "description": card["description"],
+        "status": status,
+    }
+
+
 @app.get("/api/apps")
 async def get_apps() -> dict[str, list[dict]]:
-    results = []
     async with httpx.AsyncClient(verify=False, timeout=3.0) as client:
-        for card in APP_CARDS:
-            health_type = card.get("healthType", "http")
+        results = await asyncio.gather(
+            *[_check_card(client, card) for card in APP_CARDS]
+        )
+    return {"apps": list(results)}
 
-            if health_type == "tcp":
-                host, port_str = card["healthUrl"].rsplit(":", 1)
-                online = await _check_tcp(host, int(port_str))
-            else:
-                online = await _check_http(client, card["healthUrl"])
 
-            results.append({
-                "name": card["name"],
-                "url": card["url"],
-                "imageUrl": card["imageUrl"],
-                "description": card["description"],
-                "status": "Online" if online else "Offline",
-            })
-    return {"apps": results}
+@app.get("/api/proxmox/summary")
+async def get_proxmox_summary() -> dict:
+    host, vms, lxcs, storage = await asyncio.gather(
+        get_node_status(),
+        get_vms(),
+        get_lxcs(),
+        get_storage(),
+    )
+    return {"host": host, "vms": vms, "lxcs": lxcs, "storage": storage}

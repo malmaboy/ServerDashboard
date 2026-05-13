@@ -21,14 +21,69 @@
           <h2>{{ app.name }}</h2>
           <p>{{ app.description }}</p>
         </div>
-
-        <a class="app-link" [href]="app.url" target="_blank" rel="noreferrer">
-          Open app
-        </a>
+        <a class="app-link" [href]="app.url" target="_blank" rel="noreferrer">Open app</a>
       </div>
     </article>
   </section>
 
+  <!-- Proxmox Infrastructure -->
+  <section *ngIf="proxmox" class="infra-section">
+    <div class="infra-header">
+      <h2 class="infra-title">Infrastructure</h2>
+      <span class="infra-node">pve &mdash; 192.168.1.200</span>
+    </div>
+
+    <!-- Host metrics -->
+    <div class="host-stats" *ngIf="proxmox.host && proxmox.host.ram_total_gb">
+      <div class="stat-box">
+        <span class="stat-label">CPU</span>
+        <span class="stat-value">{{ proxmox.host.cpu }}%</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">RAM</span>
+        <span class="stat-value">{{ proxmox.host.ram_used_gb }} <small>/ {{ proxmox.host.ram_total_gb }} GB</small></span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">Uptime</span>
+        <span class="stat-value">{{ uptimeLabel(proxmox.host.uptime_seconds) }}</span>
+      </div>
+    </div>
+
+    <!-- VMs + LXCs -->
+    <div class="vm-list" *ngIf="allVms().length > 0">
+      <div class="vm-row" *ngFor="let vm of allVms(); trackBy: trackByVmid">
+        <span class="vm-dot" [class.vm-dot--running]="vm.status === 'running'" [class.vm-dot--stopped]="vm.status !== 'running'"></span>
+        <span class="vm-id">{{ vm.vmid }}</span>
+        <span class="vm-name">{{ vm.name }}</span>
+        <span class="vm-tag" [class.vm-tag--qemu]="vm.type === 'qemu'" [class.vm-tag--lxc]="vm.type === 'lxc'">
+          {{ vm.type === 'qemu' ? 'VM' : 'LXC' }}
+        </span>
+        <span class="vm-stat">CPU {{ vm.cpu }}%</span>
+        <span class="vm-stat">{{ vm.ram_used_gb }} / {{ vm.ram_max_gb }} GB</span>
+        <div class="vm-ram-bar">
+          <div class="vm-ram-fill" [style.width.%]="ramPct(vm)" [class.warn]="ramPct(vm) >= 80"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Storage -->
+    <div class="storage-list" *ngIf="proxmox.storage.length > 0">
+      <h3 class="storage-title">Storage</h3>
+      <div class="storage-item" *ngFor="let s of proxmox.storage; trackBy: trackByStorage">
+        <div class="storage-row">
+          <span class="storage-name">{{ s.name }}</span>
+          <span class="storage-type">{{ s.type }}</span>
+          <span class="storage-usage" [class.warn]="storageWarn(s.pct)">{{ s.pct }}%</span>
+          <span class="storage-nums">{{ s.used_gb }} / {{ s.total_gb }} GB</span>
+        </div>
+        <div class="storage-track">
+          <div class="storage-fill" [style.width.%]="s.pct" [class.warn]="storageWarn(s.pct)"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Game Servers -->
   <section *ngIf="gameServers.length > 0" class="gs-section">
     <h2 class="gs-section-title">Game Servers</h2>
     <p class="gs-section-note">Only one server can run at a time — switching stops the active one automatically.</p>
