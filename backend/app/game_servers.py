@@ -73,19 +73,26 @@ def _container_status(client: docker.DockerClient, name: str) -> str:
         return "not_found"
 
 
-@router.get("/api/game-servers")
-def get_game_servers() -> dict:
-    client = _client()
-    result = []
-    for game, cfg in GAME_CONFIGS.items():
-        status = _container_status(client, cfg["container_name"])
-        result.append({
+def list_game_servers() -> list[dict]:
+    """Sync helper — safe to call from a thread pool."""
+    try:
+        client = docker.from_env()
+    except Exception:
+        return []
+    return [
+        {
             "game": game,
             "displayName": cfg["display_name"],
             "containerName": cfg["container_name"],
-            "status": status,
-        })
-    return {"gameServers": result}
+            "status": _container_status(client, cfg["container_name"]),
+        }
+        for game, cfg in GAME_CONFIGS.items()
+    ]
+
+
+@router.get("/api/game-servers")
+def get_game_servers() -> dict:
+    return {"gameServers": list_game_servers()}
 
 
 @router.post("/api/game-servers/{game}/start")

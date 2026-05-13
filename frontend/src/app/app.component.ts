@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, NgZone, OnDestroy, OnInit } from '@angular/core';
 
 @Component({
   selector: 'app-root',
@@ -11,6 +11,8 @@ import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 })
 export class AppComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
+  private readonly zone = inject(NgZone);
+  private eventSource: EventSource | null = null;
 
   protected apps: AppCard[] = [];
   protected loading = true;
@@ -18,21 +20,13 @@ export class AppComponent implements OnInit, OnDestroy {
   protected gameServers: GameServer[] = [];
   protected gameServerLoading: string | null = null;
   protected proxmox: ProxmoxSummary | null = null;
-  private refreshInterval: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
-    this.loadApps();
-    this.loadGameServers();
-    this.loadProxmox();
-    this.refreshInterval = setInterval(() => {
-      this.loadApps();
-      this.loadGameServers();
-      this.loadProxmox();
-    }, 30000);
+    this.connectSSE();
   }
 
   ngOnDestroy(): void {
-    if (this.refreshInterval) clearInterval(this.refreshInterval);
+    this.eventSource?.close();
   }
 
   protected trackByUrl(_: number, app: AppCard): string { return app.url; }
@@ -57,8 +51,7 @@ export class AppComponent implements OnInit, OnDestroy {
   protected uptimeLabel(seconds: number): string {
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
-    if (days > 0) return `${days}d ${hours}h`;
-    return `${hours}h`;
+    return days > 0 ? `${days}d ${hours}h` : `${hours}h`;
   }
 
   protected ramPct(vm: PveVM): number {
@@ -73,30 +66,43 @@ export class AppComponent implements OnInit, OnDestroy {
     this.gameServerLoading = gs.game;
     const action = gs.status === 'running' ? 'stop' : 'start';
     this.http.post(`/api/game-servers/${gs.game}/${action}`, {}).subscribe({
-      next: () => { this.loadGameServers(); this.gameServerLoading = null; },
+      next: () => { this.gameServerLoading = null; },
       error: () => { this.gameServerLoading = null; }
     });
   }
 
-  private loadApps(): void {
-    this.http.get<AppResponse>('/api/apps').subscribe({
-      next: ({ apps }) => { this.apps = apps; this.loading = false; },
-      error: () => { this.error = 'Could not load apps from the backend.'; this.loading = false; }
-    });
-  }
+  private connectSSE(): void {
+    this.eventSource = new EventSource('/api/events');
 
-  private loadGameServers(): void {
-    this.http.get<GameServersResponse>('/api/game-servers').subscribe({
-      next: ({ gameServers }) => { this.gameServers = gameServers; },
-      error: () => {}
+    this.eventSource.addEventListener('apps', (e: MessageEvent) => {
+      this.zone.run(() => {
+        const data = JSON.parse(e.data) as AppResponse;
+        this.apps = data.apps;
+        this.loading = false;
+        this.error = '';
+      });
     });
-  }
 
-  private loadProxmox(): void {
-    this.http.get<ProxmoxSummary>('/api/proxmox/summary').subscribe({
-      next: (data) => { this.proxmox = data; },
-      error: () => { this.proxmox = null; }
+    this.eventSource.addEventListener('proxmox', (e: MessageEvent) => {
+      this.zone.run(() => {
+        this.proxmox = JSON.parse(e.data) as ProxmoxSummary;
+      });
     });
+
+    this.eventSource.addEventListener('game-servers', (e: MessageEvent) => {
+      this.zone.run(() => {
+        const data = JSON.parse(e.data) as GameServersResponse;
+        this.gameServers = data.gameServers;
+      });
+    });
+
+    this.eventSource.onerror = () => {
+      this.zone.run(() => {
+        if (this.loading) this.error = 'Connecting to backend...';
+      });
+      this.eventSource?.close();
+      setTimeout(() => this.connectSSE(), 5000);
+    };
   }
 }
 

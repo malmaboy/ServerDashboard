@@ -1,13 +1,16 @@
 import asyncio
+import json
 import logging
 import os
 
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
+from sse_starlette.sse import EventSourceResponse
 
 from .app_config import APP_CARDS, AppCard
-from .game_servers import router as game_servers_router
+from .game_servers import list_game_servers, router as game_servers_router
 from .proxmox.nodes import get_lxcs, get_node_status, get_storage, get_vms
 
 logging.basicConfig(
@@ -78,21 +81,53 @@ async def _check_card(client: httpx.AsyncClient, card: AppCard) -> dict:
     }
 
 
-@app.get("/api/apps")
-async def get_apps() -> dict[str, list[dict]]:
+async def _fetch_apps() -> list[dict]:
     async with httpx.AsyncClient(verify=False, timeout=3.0) as client:
         results = await asyncio.gather(
             *[_check_card(client, card) for card in APP_CARDS]
         )
-    return {"apps": list(results)}
+    return list(results)
+
+
+async def _fetch_proxmox() -> dict:
+    host, vms, lxcs, storage = await asyncio.gather(
+        get_node_status(), get_vms(), get_lxcs(), get_storage()
+    )
+    return {"host": host, "vms": vms, "lxcs": lxcs, "storage": storage}
+
+
+@app.get("/api/apps")
+async def get_apps() -> dict[str, list[dict]]:
+    return {"apps": await _fetch_apps()}
 
 
 @app.get("/api/proxmox/summary")
 async def get_proxmox_summary() -> dict:
-    host, vms, lxcs, storage = await asyncio.gather(
-        get_node_status(),
-        get_vms(),
-        get_lxcs(),
-        get_storage(),
-    )
-    return {"host": host, "vms": vms, "lxcs": lxcs, "storage": storage}
+    return await _fetch_proxmox()
+
+
+@app.get("/api/events")
+async def events(request: Request):
+    async def generator():
+        logger.info("SSE client connected")
+        try:
+            while True:
+                if await request.is_disconnected():
+                    logger.info("SSE client disconnected")
+                    break
+
+                apps_data, proxmox_data, game_data = await asyncio.gather(
+                    _fetch_apps(),
+                    _fetch_proxmox(),
+                    run_in_threadpool(list_game_servers),
+                )
+
+                yield {"event": "apps", "data": json.dumps({"apps": apps_data})}
+                yield {"event": "proxmox", "data": json.dumps(proxmox_data)}
+                yield {"event": "game-servers", "data": json.dumps({"gameServers": game_data})}
+
+                await asyncio.sleep(15)
+        except asyncio.CancelledError:
+            logger.info("SSE generator cancelled")
+
+    return EventSourceResponse(generator())
