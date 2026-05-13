@@ -50,3 +50,19 @@ async def pve_get(path: str) -> list | dict:
         r = await client.get(f"{BASE_URL}{path}")
         r.raise_for_status()
         return r.json()["data"]
+
+
+async def pve_post(path: str, data: dict | None = None) -> str | dict | None:
+    ticket, csrf = await _authenticate()
+    async with httpx.AsyncClient(
+        verify=False,
+        timeout=15.0,
+        cookies={"PVEAuthCookie": ticket},
+    ) as client:
+        r = await client.post(
+            f"{BASE_URL}{path}",
+            data=data or {},
+            headers={"CSRFPreventionToken": csrf},
+        )
+        r.raise_for_status()
+        return r.json().get("data")

@@ -1,12 +1,19 @@
 <main class="dashboard-shell">
-  <section *ngIf="loading" class="state-card">
-    <p>Loading dashboard...</p>
-  </section>
 
-  <section *ngIf="error" class="state-card error">
-    <p>{{ error }}</p>
-  </section>
+  <!-- Alerts banner -->
+  <div class="alerts-bar" *ngIf="proxmox && proxmox.alerts?.length">
+    <div *ngFor="let alert of proxmox.alerts; trackBy: trackByKey"
+         class="alert-item" [class.alert-critical]="alert.level === 'critical'" [class.alert-warning]="alert.level === 'warning'">
+      <span class="alert-icon">{{ alert.level === 'critical' ? '🔴' : '⚠️' }}</span>
+      <span class="alert-text">{{ alert.message }}</span>
+    </div>
+  </div>
 
+  <!-- Loading / error states -->
+  <section *ngIf="loading" class="state-card"><p>Loading dashboard...</p></section>
+  <section *ngIf="error" class="state-card error"><p>{{ error }}</p></section>
+
+  <!-- App cards -->
   <section *ngIf="!loading && !error" class="cards-grid">
     <article *ngFor="let app of apps; trackBy: trackByUrl" class="app-card">
       <div class="image-wrap">
@@ -15,18 +22,22 @@
           {{ app.status }}
         </span>
       </div>
-
       <div class="card-body">
         <div>
           <h2>{{ app.name }}</h2>
           <p>{{ app.description }}</p>
         </div>
-        <a class="app-link" [href]="app.url" target="_blank" rel="noreferrer">Open app</a>
+        <div class="card-footer">
+          <a class="app-link" [href]="app.url" target="_blank" rel="noreferrer">Open app</a>
+          <span *ngIf="app.latencyMs != null" class="latency-badge" [class]="'latency-' + latencyClass(app.latencyMs)">
+            {{ app.latencyMs }} ms
+          </span>
+        </div>
       </div>
     </article>
   </section>
 
-  <!-- Proxmox Infrastructure -->
+  <!-- Infrastructure (Proxmox) -->
   <section *ngIf="proxmox" class="infra-section">
     <div class="infra-header">
       <h2 class="infra-title">Infrastructure</h2>
@@ -34,7 +45,7 @@
     </div>
 
     <!-- Host metrics -->
-    <div class="host-stats" *ngIf="proxmox.host && proxmox.host.ram_total_gb">
+    <div class="host-stats" *ngIf="proxmox.host?.ram_total_gb">
       <div class="stat-box">
         <span class="stat-label">CPU</span>
         <span class="stat-value">{{ proxmox.host.cpu }}%</span>
@@ -63,6 +74,13 @@
         <div class="vm-ram-bar">
           <div class="vm-ram-fill" [style.width.%]="ramPct(vm)" [class.warn]="ramPct(vm) >= 80"></div>
         </div>
+        <!-- VM action buttons -->
+        <div class="vm-actions">
+          <button *ngIf="canStart(vm)" class="vm-btn vm-btn--start" [disabled]="isVmLoading(vm.vmid)" (click)="controlVm(vm, 'start')" title="Start">▶</button>
+          <button *ngIf="canStop(vm)"  class="vm-btn vm-btn--stop"  [disabled]="isVmLoading(vm.vmid)" (click)="controlVm(vm, 'stop')"  title="Stop">■</button>
+          <button *ngIf="canReboot(vm)" class="vm-btn vm-btn--reboot" [disabled]="isVmLoading(vm.vmid)" (click)="controlVm(vm, 'reboot')" title="Reboot">↺</button>
+          <span *ngIf="isVmLoading(vm.vmid)" class="vm-spinner">⟳</span>
+        </div>
       </div>
     </div>
 
@@ -79,6 +97,19 @@
         <div class="storage-track">
           <div class="storage-fill" [style.width.%]="s.pct" [class.warn]="storageWarn(s.pct)"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Recent tasks -->
+    <div class="tasks-section" *ngIf="proxmox.tasks?.length">
+      <h3 class="tasks-title">Recent Tasks</h3>
+      <div class="task-row" *ngFor="let task of proxmox.tasks; trackBy: trackByUpid">
+        <span class="task-dot" [class.task-dot--ok]="task.status === 'ok'" [class.task-dot--failed]="task.status === 'failed'" [class.task-dot--running]="task.status === 'running'"></span>
+        <span class="task-type">{{ task.type_label }}</span>
+        <span class="task-id">{{ task.id }}</span>
+        <span class="task-time">{{ taskTimeLabel(task.starttime) }}</span>
+        <span class="task-duration" *ngIf="task.duration_secs != null">{{ taskDurationLabel(task.duration_secs) }}</span>
+        <span class="task-running" *ngIf="task.status === 'running'">Running…</span>
       </div>
     </div>
   </section>
@@ -100,16 +131,13 @@
             </span>
           </div>
         </div>
-        <button
-          class="gs-toggle"
-          [class.gs-toggle--start]="!isRunning(gs)"
-          [class.gs-toggle--stop]="isRunning(gs)"
-          [disabled]="gameServerLoading !== null"
-          (click)="toggleGameServer(gs)">
+        <button class="gs-toggle" [class.gs-toggle--start]="!isRunning(gs)" [class.gs-toggle--stop]="isRunning(gs)"
+                [disabled]="gameServerLoading !== null" (click)="toggleGameServer(gs)">
           <span *ngIf="gameServerLoading !== gs.game">{{ isRunning(gs) ? 'Stop' : 'Start' }}</span>
           <span *ngIf="gameServerLoading === gs.game" class="gs-spinner">⟳</span>
         </button>
       </article>
     </div>
   </section>
+
 </main>

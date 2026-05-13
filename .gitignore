@@ -1,0 +1,12 @@
+# Credenciais — nunca commitar
+backend/.env
+
+# Dependências e build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Python
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc

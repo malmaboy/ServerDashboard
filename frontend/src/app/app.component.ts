@@ -20,19 +20,17 @@ export class AppComponent implements OnInit, OnDestroy {
   protected gameServers: GameServer[] = [];
   protected gameServerLoading: string | null = null;
   protected proxmox: ProxmoxSummary | null = null;
+  protected vmActionLoading: string | null = null;
 
-  ngOnInit(): void {
-    this.connectSSE();
-  }
+  ngOnInit(): void { this.connectSSE(); }
+  ngOnDestroy(): void { this.eventSource?.close(); }
 
-  ngOnDestroy(): void {
-    this.eventSource?.close();
-  }
-
-  protected trackByUrl(_: number, app: AppCard): string { return app.url; }
-  protected trackByGame(_: number, gs: GameServer): string { return gs.game; }
-  protected trackByVmid(_: number, vm: PveVM): number { return vm.vmid; }
+  protected trackByUrl(_: number, a: AppCard): string { return a.url; }
+  protected trackByGame(_: number, g: GameServer): string { return g.game; }
+  protected trackByVmid(_: number, v: PveVM): number { return v.vmid; }
   protected trackByStorage(_: number, s: PveStorage): string { return s.name; }
+  protected trackByKey(_: number, a: Alert): string { return a.key; }
+  protected trackByUpid(_: number, t: Task): string { return t.starttime + t.type + t.id; }
 
   protected isOnline(status: string): boolean { return status === 'Online'; }
   protected isRunning(gs: GameServer): boolean { return gs.status === 'running'; }
@@ -49,17 +47,57 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   protected uptimeLabel(seconds: number): string {
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    return days > 0 ? `${days}d ${hours}h` : `${hours}h`;
+    const d = Math.floor(seconds / 86400);
+    const h = Math.floor((seconds % 86400) / 3600);
+    return d > 0 ? `${d}d ${h}h` : `${h}h`;
   }
 
   protected ramPct(vm: PveVM): number {
-    if (!vm.ram_max_gb) return 0;
-    return Math.round((vm.ram_used_gb / vm.ram_max_gb) * 100);
+    return vm.ram_max_gb ? Math.round((vm.ram_used_gb / vm.ram_max_gb) * 100) : 0;
   }
 
   protected storageWarn(pct: number): boolean { return pct >= 80; }
+
+  protected latencyClass(ms: number | null): string {
+    if (ms === null) return '';
+    if (ms < 150) return 'fast';
+    if (ms < 500) return 'medium';
+    return 'slow';
+  }
+
+  protected taskTimeLabel(starttime: number): string {
+    const diff = Math.floor(Date.now() / 1000) - starttime;
+    if (diff < 60) return `${diff}s atrás`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m atrás`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h atrás`;
+    return `${Math.floor(diff / 86400)}d atrás`;
+  }
+
+  protected taskDurationLabel(duration: number | null): string {
+    if (duration === null) return '';
+    if (duration < 60) return `${duration}s`;
+    return `${Math.floor(duration / 60)}m ${duration % 60}s`;
+  }
+
+  // ── VM control ────────────────────────────────────────────────────────────
+
+  protected canStart(vm: PveVM): boolean { return vm.status === 'stopped'; }
+  protected canStop(vm: PveVM): boolean { return vm.status === 'running'; }
+  protected canReboot(vm: PveVM): boolean { return vm.status === 'running'; }
+  protected isVmLoading(vmid: number): boolean {
+    return this.vmActionLoading?.startsWith(`${vmid}-`) ?? false;
+  }
+
+  protected controlVm(vm: PveVM, action: 'start' | 'stop' | 'reboot'): void {
+    if (this.vmActionLoading) return;
+    this.vmActionLoading = `${vm.vmid}-${action}`;
+    this.http.post(`/api/proxmox/vms/${vm.vmid}/${action}?vm_type=${vm.type}`, {}).subscribe({
+      next: () => { this.vmActionLoading = null; },
+      error: () => { this.vmActionLoading = null; }
+    });
+  }
+
+  // ── Game servers ──────────────────────────────────────────────────────────
 
   protected toggleGameServer(gs: GameServer): void {
     if (this.gameServerLoading) return;
@@ -70,6 +108,8 @@ export class AppComponent implements OnInit, OnDestroy {
       error: () => { this.gameServerLoading = null; }
     });
   }
+
+  // ── SSE ───────────────────────────────────────────────────────────────────
 
   private connectSSE(): void {
     this.eventSource = new EventSource('/api/events');
@@ -84,55 +124,51 @@ export class AppComponent implements OnInit, OnDestroy {
     });
 
     this.eventSource.addEventListener('proxmox', (e: MessageEvent) => {
-      this.zone.run(() => {
-        this.proxmox = JSON.parse(e.data) as ProxmoxSummary;
-      });
+      this.zone.run(() => { this.proxmox = JSON.parse(e.data) as ProxmoxSummary; });
     });
 
     this.eventSource.addEventListener('game-servers', (e: MessageEvent) => {
       this.zone.run(() => {
-        const data = JSON.parse(e.data) as GameServersResponse;
-        this.gameServers = data.gameServers;
+        this.gameServers = (JSON.parse(e.data) as GameServersResponse).gameServers;
       });
     });
 
     this.eventSource.onerror = () => {
-      this.zone.run(() => {
-        if (this.loading) this.error = 'Connecting to backend...';
-      });
+      this.zone.run(() => { if (this.loading) this.error = 'Connecting to backend...'; });
       this.eventSource?.close();
       setTimeout(() => this.connectSSE(), 5000);
     };
   }
 }
 
+// ── Interfaces ────────────────────────────────────────────────────────────────
+
 interface AppResponse { apps: AppCard[]; }
-interface AppCard { name: string; url: string; imageUrl: string; description: string; status: string; }
+interface AppCard { name: string; url: string; imageUrl: string; description: string; status: string; latencyMs: number | null; }
 interface GameServersResponse { gameServers: GameServer[]; }
 interface GameServer { game: string; displayName: string; containerName: string; status: string; }
 
 interface PveVM {
-  vmid: number;
-  name: string;
-  status: string;
-  cpu: number;
-  ram_used_gb: number;
-  ram_max_gb: number;
+  vmid: number; name: string; status: string;
+  cpu: number; ram_used_gb: number; ram_max_gb: number;
   type: 'qemu' | 'lxc';
 }
 
 interface PveStorage {
-  name: string;
-  type: string;
-  total_gb: number;
-  used_gb: number;
-  avail_gb: number;
-  pct: number;
+  name: string; type: string;
+  total_gb: number; used_gb: number; avail_gb: number; pct: number;
+}
+
+interface Alert { key: string; level: 'critical' | 'warning'; message: string; }
+
+interface Task {
+  type: string; type_label: string; id: string; user: string;
+  status: 'ok' | 'failed' | 'running';
+  starttime: number; duration_secs: number | null;
 }
 
 interface ProxmoxSummary {
   host: { cpu: number; ram_used_gb: number; ram_total_gb: number; uptime_seconds: number; };
-  vms: PveVM[];
-  lxcs: PveVM[];
-  storage: PveStorage[];
+  vms: PveVM[]; lxcs: PveVM[]; storage: PveStorage[];
+  alerts: Alert[]; tasks: Task[];
 }

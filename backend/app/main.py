@@ -2,16 +2,23 @@ import asyncio
 import json
 import logging
 import os
+import time
 
 import httpx
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
 from .app_config import APP_CARDS, AppCard
 from .game_servers import list_game_servers, router as game_servers_router
-from .proxmox.nodes import get_lxcs, get_node_status, get_storage, get_vms
+from .proxmox.alerts import (
+    check_resource_alerts_discord,
+    check_service_transitions,
+    compute_resource_alerts,
+)
+from .proxmox.nodes import control_vm, get_lxcs, get_node_status, get_storage, get_vms
+from .proxmox.tasks import get_recent_tasks
 
 logging.basicConfig(
     level=logging.INFO,
@@ -43,6 +50,8 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+# ── Health checks ────────────────────────────────────────────────────────────
+
 async def _check_http(client: httpx.AsyncClient, url: str) -> bool:
     try:
         r = await client.get(url)
@@ -64,20 +73,23 @@ async def _check_tcp(host: str, port: int) -> bool:
 
 
 async def _check_card(client: httpx.AsyncClient, card: AppCard) -> dict:
+    t0 = time.monotonic()
     health_type = card.get("healthType", "http")
     if health_type.startswith("tcp"):
         host, port_str = card["healthUrl"].rsplit(":", 1)
         online = await _check_tcp(host, int(port_str))
     else:
         online = await _check_http(client, card["healthUrl"])
+    latency_ms = round((time.monotonic() - t0) * 1000)
     status = "Online" if online else "Offline"
-    logger.debug("%s → %s", card["name"], status)
+    logger.debug("%s → %s (%dms)", card["name"], status, latency_ms)
     return {
         "name": card["name"],
         "url": card["url"],
         "imageUrl": card["imageUrl"],
         "description": card["description"],
         "status": status,
+        "latencyMs": latency_ms if online else None,
     }
 
 
@@ -90,11 +102,25 @@ async def _fetch_apps() -> list[dict]:
 
 
 async def _fetch_proxmox() -> dict:
-    host, vms, lxcs, storage = await asyncio.gather(
-        get_node_status(), get_vms(), get_lxcs(), get_storage()
+    host, vms, lxcs, storage, tasks = await asyncio.gather(
+        get_node_status(),
+        get_vms(),
+        get_lxcs(),
+        get_storage(),
+        get_recent_tasks(),
     )
-    return {"host": host, "vms": vms, "lxcs": lxcs, "storage": storage}
+    alerts = compute_resource_alerts(host, storage)
+    return {
+        "host": host,
+        "vms": vms,
+        "lxcs": lxcs,
+        "storage": storage,
+        "tasks": tasks,
+        "alerts": alerts,
+    }
 
+
+# ── REST endpoints ───────────────────────────────────────────────────────────
 
 @app.get("/api/apps")
 async def get_apps() -> dict[str, list[dict]]:
@@ -105,6 +131,23 @@ async def get_apps() -> dict[str, list[dict]]:
 async def get_proxmox_summary() -> dict:
     return await _fetch_proxmox()
 
+
+@app.post("/api/proxmox/vms/{vmid}/{action}")
+async def vm_action(vmid: int, action: str, vm_type: str = "qemu") -> dict:
+    if action not in ("start", "stop", "reboot"):
+        raise HTTPException(400, "action must be start, stop or reboot")
+    if vm_type not in ("qemu", "lxc"):
+        raise HTTPException(400, "vm_type must be qemu or lxc")
+    try:
+        upid = await control_vm(vmid, vm_type, action)
+        logger.info("VM %s %s/%s → %s", action, vm_type, vmid, upid)
+        return {"status": "ok", "upid": upid}
+    except Exception as exc:
+        logger.error("VM action failed: %s", exc)
+        raise HTTPException(500, str(exc))
+
+
+# ── SSE ──────────────────────────────────────────────────────────────────────
 
 @app.get("/api/events")
 async def events(request: Request):
@@ -120,6 +163,11 @@ async def events(request: Request):
                     _fetch_apps(),
                     _fetch_proxmox(),
                     run_in_threadpool(list_game_servers),
+                )
+
+                await asyncio.gather(
+                    check_service_transitions(apps_data),
+                    check_resource_alerts_discord(proxmox_data.get("alerts", [])),
                 )
 
                 yield {"event": "apps", "data": json.dumps({"apps": apps_data})}

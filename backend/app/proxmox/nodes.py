@@ -1,6 +1,6 @@
 import logging
 
-from .client import PROXMOX_NODE, pve_get
+from .client import PROXMOX_NODE, pve_get, pve_post
 
 logger = logging.getLogger(__name__)
 
@@ -81,3 +81,13 @@ async def get_storage() -> list[dict]:
     except Exception as exc:
         logger.warning("Proxmox storage failed: %s", exc)
         return []
+
+
+async def control_vm(vmid: int, vm_type: str, action: str) -> str | None:
+    """Start, stop or reboot a VM or LXC. Returns the Proxmox task UPID."""
+    if action not in ("start", "stop", "reboot"):
+        raise ValueError(f"Invalid action: {action}")
+    if vm_type not in ("qemu", "lxc"):
+        raise ValueError(f"Invalid vm_type: {vm_type}")
+    path = f"/nodes/{PROXMOX_NODE}/{vm_type}/{vmid}/status/{action}"
+    return await pve_post(path)
