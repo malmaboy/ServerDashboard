@@ -40,7 +40,21 @@ jobs:
             --exclude ".git/" \
             --exclude ".github/" \
             --exclude "frontend/node_modules/" \
+            --exclude "backend/.env" \
             ./ "${DEPLOY_DIR}/"
+
+      - name: Write backend .env from secrets
+        run: |
+          set -euo pipefail
+          {
+            echo "PROXMOX_HOST=${{ secrets.PROXMOX_HOST }}"
+            echo "PROXMOX_PORT=${{ secrets.PROXMOX_PORT }}"
+            echo "PROXMOX_USER=${{ secrets.PROXMOX_USER }}"
+            echo "PROXMOX_PASSWORD=${{ secrets.PROXMOX_PASSWORD }}"
+            echo "PROXMOX_NODE=${{ secrets.PROXMOX_NODE }}"
+            echo "ALLOWED_ORIGIN=${{ secrets.ALLOWED_ORIGIN }}"
+            echo "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}"
+          } > "${DEPLOY_DIR}/backend/.env"
 
       - name: Verify Docker
         run: |
