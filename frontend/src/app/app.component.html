@@ -139,12 +139,21 @@
     <div class="vm-list" *ngIf="raspberryPi.containers && raspberryPi.containers.length > 0">
       <div class="vm-row" *ngFor="let c of raspberryPi.containers">
         <span class="vm-dot" [class.vm-dot--running]="c.status === 'running'" [class.vm-dot--stopped]="c.status !== 'running'"></span>
+        <span class="vm-id"></span>
         <span class="vm-name">{{ c.name }}</span>
         <span class="vm-tag vm-tag--lxc">container</span>
-        <span class="vm-stat">{{ c.image }}</span>
-        <ng-container *ngFor="let p of c.ports">
-          <a class="vm-stat" [href]="'http://' + p" target="_blank" rel="noreferrer" style="color:#7dd3fc;text-decoration:none;">{{ p }}</a>
-        </ng-container>
+        <span class="vm-stat">{{ piImageLabel(c.image) }}</span>
+        <span class="vm-stat">{{ piPortsLabel(c.ports) }}</span>
+        <div class="vm-ram-bar"></div>
+        <div class="vm-actions">
+          <button *ngIf="c.status !== 'running'" class="vm-btn vm-btn--start"
+            [disabled]="piContainerLoading !== null"
+            (click)="controlPiContainer(c.name, 'start')" title="Start">▶</button>
+          <button *ngIf="c.status === 'running'" class="vm-btn vm-btn--stop"
+            [disabled]="piContainerLoading !== null"
+            (click)="controlPiContainer(c.name, 'stop')" title="Stop">■</button>
+          <span *ngIf="piContainerLoading === c.name" class="vm-spinner">⟳</span>
+        </div>
       </div>
     </div>
   </section>

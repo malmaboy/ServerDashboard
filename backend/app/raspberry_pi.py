@@ -24,3 +24,9 @@ async def get_raspberry_pi_stats() -> dict | None:
     except Exception as exc:
         logger.warning("Raspberry Pi stats unavailable: %s", exc)
         return None
+
+
+async def control_pi_container(name: str, action: str) -> None:
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        r = await client.post(f"{RASPBERRY_PI_URL}/containers/{name}/{action}")
+        r.raise_for_status()

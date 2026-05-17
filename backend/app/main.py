@@ -12,7 +12,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from .app_config import APP_CARDS, AppCard
 from .game_servers import list_game_servers, router as game_servers_router
-from .raspberry_pi import get_raspberry_pi_stats
+from .raspberry_pi import control_pi_container, get_raspberry_pi_stats
 from .proxmox.alerts import (
     check_resource_alerts_discord,
     check_service_transitions,
@@ -131,6 +131,19 @@ async def get_apps() -> dict[str, list[dict]]:
 @app.get("/api/proxmox/summary")
 async def get_proxmox_summary() -> dict:
     return await _fetch_proxmox()
+
+
+@app.post("/api/raspberry-pi/containers/{name}/{action}")
+async def pi_container_action(name: str, action: str) -> dict:
+    if action not in ("start", "stop"):
+        raise HTTPException(400, "action must be start or stop")
+    try:
+        await control_pi_container(name, action)
+        logger.info("Pi container %s %s", action, name)
+        return {"status": "ok"}
+    except Exception as exc:
+        logger.error("Pi container action failed: %s", exc)
+        raise HTTPException(500, str(exc))
 
 
 @app.post("/api/proxmox/vms/{vmid}/{action}")

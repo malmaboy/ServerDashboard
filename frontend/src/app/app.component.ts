@@ -22,6 +22,7 @@ export class AppComponent implements OnInit, OnDestroy {
   protected proxmox: ProxmoxSummary | null = null;
   protected vmActionLoading: string | null = null;
   protected raspberryPi: RaspberryPiStats | null = null;
+  protected piContainerLoading: string | null = null;
 
   ngOnInit(): void { this.connectSSE(); }
   ngOnDestroy(): void { this.eventSource?.close(); }
@@ -95,6 +96,20 @@ export class AppComponent implements OnInit, OnDestroy {
     this.http.post(`/api/proxmox/vms/${vm.vmid}/${action}?vm_type=${vm.type}`, {}).subscribe({
       next: () => { this.vmActionLoading = null; },
       error: () => { this.vmActionLoading = null; }
+    });
+  }
+
+  // ── Raspberry Pi containers ───────────────────────────────────────────────
+
+  protected piPortsLabel(ports: string[]): string { return ports.join(' · '); }
+  protected piImageLabel(image: string): string { return image.split(':')[0]; }
+
+  protected controlPiContainer(name: string, action: 'start' | 'stop'): void {
+    if (this.piContainerLoading) return;
+    this.piContainerLoading = name;
+    this.http.post(`/api/raspberry-pi/containers/${name}/${action}`, {}).subscribe({
+      next: () => { this.piContainerLoading = null; },
+      error: () => { this.piContainerLoading = null; }
     });
   }
 
