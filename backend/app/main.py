@@ -12,6 +12,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from .app_config import APP_CARDS, AppCard
 from .game_servers import list_game_servers, router as game_servers_router
+from .raspberry_pi import get_raspberry_pi_stats
 from .proxmox.alerts import (
     check_resource_alerts_discord,
     check_service_transitions,
@@ -159,10 +160,11 @@ async def events(request: Request):
                     logger.info("SSE client disconnected")
                     break
 
-                apps_data, proxmox_data, game_data = await asyncio.gather(
+                apps_data, proxmox_data, game_data, pi_data = await asyncio.gather(
                     _fetch_apps(),
                     _fetch_proxmox(),
                     run_in_threadpool(list_game_servers),
+                    get_raspberry_pi_stats(),
                 )
 
                 await asyncio.gather(
@@ -173,6 +175,7 @@ async def events(request: Request):
                 yield {"event": "apps", "data": json.dumps({"apps": apps_data})}
                 yield {"event": "proxmox", "data": json.dumps(proxmox_data)}
                 yield {"event": "game-servers", "data": json.dumps({"gameServers": game_data})}
+                yield {"event": "raspberry-pi", "data": json.dumps({"raspberryPi": pi_data})}
 
                 await asyncio.sleep(15)
         except asyncio.CancelledError:

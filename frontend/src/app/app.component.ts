@@ -21,6 +21,7 @@ export class AppComponent implements OnInit, OnDestroy {
   protected gameServerLoading: string | null = null;
   protected proxmox: ProxmoxSummary | null = null;
   protected vmActionLoading: string | null = null;
+  protected raspberryPi: RaspberryPiStats | null = null;
 
   ngOnInit(): void { this.connectSSE(); }
   ngOnDestroy(): void { this.eventSource?.close(); }
@@ -133,6 +134,12 @@ export class AppComponent implements OnInit, OnDestroy {
       });
     });
 
+    this.eventSource.addEventListener('raspberry-pi', (e: MessageEvent) => {
+      this.zone.run(() => {
+        this.raspberryPi = (JSON.parse(e.data) as { raspberryPi: RaspberryPiStats | null }).raspberryPi;
+      });
+    });
+
     this.eventSource.onerror = () => {
       this.zone.run(() => { if (this.loading) this.error = 'Connecting to backend...'; });
       this.eventSource?.close();
@@ -171,4 +178,14 @@ interface ProxmoxSummary {
   host: { cpu: number; ram_used_gb: number; ram_total_gb: number; uptime_seconds: number; };
   vms: PveVM[]; lxcs: PveVM[]; storage: PveStorage[];
   alerts: Alert[]; tasks: Task[];
+}
+
+interface PiContainer { name: string; status: string; image: string; ports: string[]; }
+
+interface RaspberryPiStats {
+  cpu: number;
+  ram_used_gb: number;
+  ram_total_gb: number;
+  uptime_seconds: number;
+  containers: PiContainer[];
 }

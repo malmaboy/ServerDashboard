@@ -53,8 +53,8 @@ APP_CARDS: list[AppCard] = [
     },
     {
         "name": "Pi-hole",
-        "url": "http://192.168.1.220/admin",
-        "healthUrl": "http://192.168.1.220/admin",
+        "url": "http://192.168.1.120/admin",
+        "healthUrl": "http://192.168.1.120/admin",
         "healthType": "http",
         "imageUrl": "https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=1400&q=80",
         "description": "Network-wide ad blocker and DNS server. Shows query statistics and block lists.",

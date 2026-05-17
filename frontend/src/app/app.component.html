@@ -114,6 +114,41 @@
     </div>
   </section>
 
+  <!-- Raspberry Pi -->
+  <section *ngIf="raspberryPi" class="infra-section">
+    <div class="infra-header">
+      <h2 class="infra-title">Raspberry Pi</h2>
+      <span class="infra-node">assistant &mdash; 192.168.1.120</span>
+    </div>
+
+    <div class="host-stats">
+      <div class="stat-box">
+        <span class="stat-label">CPU</span>
+        <span class="stat-value">{{ raspberryPi.cpu }}%</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">RAM</span>
+        <span class="stat-value">{{ raspberryPi.ram_used_gb }} <small>/ {{ raspberryPi.ram_total_gb }} GB</small></span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">Uptime</span>
+        <span class="stat-value">{{ uptimeLabel(raspberryPi.uptime_seconds) }}</span>
+      </div>
+    </div>
+
+    <div class="vm-list" *ngIf="raspberryPi.containers && raspberryPi.containers.length > 0">
+      <div class="vm-row" *ngFor="let c of raspberryPi.containers">
+        <span class="vm-dot" [class.vm-dot--running]="c.status === 'running'" [class.vm-dot--stopped]="c.status !== 'running'"></span>
+        <span class="vm-name">{{ c.name }}</span>
+        <span class="vm-tag vm-tag--lxc">container</span>
+        <span class="vm-stat">{{ c.image }}</span>
+        <ng-container *ngFor="let p of c.ports">
+          <a class="vm-stat" [href]="'http://' + p" target="_blank" rel="noreferrer" style="color:#7dd3fc;text-decoration:none;">{{ p }}</a>
+        </ng-container>
+      </div>
+    </div>
+  </section>
+
   <!-- Game Servers -->
   <section *ngIf="gameServers.length > 0" class="gs-section">
     <h2 class="gs-section-title">Game Servers</h2>
