@@ -34,6 +34,12 @@ export class AppComponent implements OnInit, OnDestroy {
   protected trackByKey(_: number, a: Alert): string { return a.key; }
   protected trackByUpid(_: number, t: Task): string { return t.starttime + t.type + t.id; }
 
+  protected onImgError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    img.style.display = 'none';
+    img.parentElement?.classList.add('img-fallback');
+  }
+
   protected isOnline(status: string): boolean { return status === 'Online'; }
   protected isRunning(gs: GameServer): boolean { return gs.status === 'running'; }
 

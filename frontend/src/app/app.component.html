@@ -17,7 +17,7 @@
   <section *ngIf="!loading && !error" class="cards-grid">
     <article *ngFor="let app of apps; trackBy: trackByUrl" class="app-card">
       <div class="image-wrap">
-        <img [src]="app.imageUrl" [alt]="app.name" />
+        <img [src]="app.imageUrl" [alt]="app.name" (error)="onImgError($event)" />
         <span class="status-pill" [class.online]="isOnline(app.status)" [class.offline]="!isOnline(app.status)">
           {{ app.status }}
         </span>

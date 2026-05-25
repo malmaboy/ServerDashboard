@@ -59,23 +59,26 @@ GAME_CONFIGS: dict[str, dict] = {
     "project-zomboid-b42": {
         "container_name": "zomboid-b42-server",
         "display_name": "Project Zomboid B42",
-        "image": "ich777/steamcmd:pzserver",
-        "ports": {"16271/udp": 16271, "16272/udp": 16272, "8776/udp": 8776},
+        "image": "cyrale/project-zomboid",
+        "ports": {"16261/udp": 16271, "16262/udp": 16272, "8766/udp": 8776},
         "environment": {
-            "PUID": "1000",
-            "PGID": "1000",
             "MAX_PLAYERS": "4",
             "SERVER_NAME": "HomeServer",
             "SERVER_PASSWORD": "",
             "ADMIN_PASSWORD": "changeme",
             "TZ": "Europe/Lisbon",
-            "GAME_PARAMS": "-Xmx3g -Xms2g",
+            "MEMORY": "3072m",
+            "BRANCH": "unstable",
         },
         "volumes": {
-            "/home/docker-host-debian/stacks/GameServers/project-zomboid-b42/data": {
-                "bind": "/serverdata",
+            "/home/docker-host-debian/stacks/GameServers/project-zomboid-b42/data/Zomboid": {
+                "bind": "/home/linuxgsm/Zomboid",
                 "mode": "rw",
-            }
+            },
+            "/home/docker-host-debian/stacks/GameServers/project-zomboid-b42/data/serverfiles": {
+                "bind": "/home/linuxgsm/serverfiles",
+                "mode": "rw",
+            },
         },
         "mem_limit": "4g",
         "nano_cpus": int(3.0 * 1e9),

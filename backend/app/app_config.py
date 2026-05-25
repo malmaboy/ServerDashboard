@@ -88,7 +88,7 @@ APP_CARDS: list[AppCard] = [
         "url": "http://192.168.1.116/",
         "healthUrl": "http://192.168.1.116/",
         "healthType": "http",
-        "imageUrl": "https://images.unsplash.com/photo-1609922552575-a92b3a97cc8b?auto=format&fit=crop&w=1400&q=80",
+        "imageUrl": "https://images.unsplash.com/photo-1642969164999-979483e21601?auto=format&fit=crop&w=1400&q=80",
         "description": "Creality 3D printer — monitoring and control panel for prints, temperatures and status.",
     },
 ]
