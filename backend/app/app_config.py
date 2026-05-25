@@ -75,4 +75,12 @@ APP_CARDS: list[AppCard] = [
         "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80",
         "description": "Raspberry Pi in the garage — Arduino bridge server for IoT sensors and automations.",
     },
+    {
+        "name": "Creality 3D Printer",
+        "url": "http://192.168.1.116/",
+        "healthUrl": "http://192.168.1.116/",
+        "healthType": "http",
+        "imageUrl": "https://images.unsplash.com/photo-1609922552575-a92b3a97cc8b?auto=format&fit=crop&w=1400&q=80",
+        "description": "Creality 3D printer — monitoring and control panel for prints, temperatures and status.",
+    },
 ]
