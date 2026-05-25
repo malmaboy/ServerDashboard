@@ -28,6 +28,14 @@ APP_CARDS: list[AppCard] = [
         "description": "Quick hub to manage containers, Docker stacks and homelab operations in a single panel.",
     },
     {
+        "name": "Nginx Proxy Manager",
+        "url": "http://192.168.1.100:81/",
+        "healthUrl": "http://192.168.1.100:81/",
+        "healthType": "http",
+        "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80",
+        "description": "Reverse proxy with SSL termination and custom domain routing for all homelab services.",
+    },
+    {
         "name": "Garden Assistant",
         "url": "http://192.168.1.100:3001/home",
         "healthUrl": "http://192.168.1.100:3001/",
@@ -53,8 +61,8 @@ APP_CARDS: list[AppCard] = [
     },
     {
         "name": "Pi-hole",
-        "url": "http://192.168.1.220/admin",
-        "healthUrl": "http://192.168.1.220/admin",
+        "url": "http://192.168.1.120/admin",
+        "healthUrl": "http://192.168.1.120/admin",
         "healthType": "http",
         "imageUrl": "https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=1400&q=80",
         "description": "Network-wide ad blocker and DNS server. Shows query statistics and block lists.",

@@ -21,6 +21,8 @@ export class AppComponent implements OnInit, OnDestroy {
   protected gameServerLoading: string | null = null;
   protected proxmox: ProxmoxSummary | null = null;
   protected vmActionLoading: string | null = null;
+  protected raspberryPi: RaspberryPiStats | null = null;
+  protected piContainerLoading: string | null = null;
 
   ngOnInit(): void { this.connectSSE(); }
   ngOnDestroy(): void { this.eventSource?.close(); }
@@ -97,6 +99,20 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ── Raspberry Pi containers ───────────────────────────────────────────────
+
+  protected piPortsLabel(ports: string[]): string { return ports.join(' · '); }
+  protected piImageLabel(image: string): string { return image.split(':')[0]; }
+
+  protected controlPiContainer(name: string, action: 'start' | 'stop'): void {
+    if (this.piContainerLoading) return;
+    this.piContainerLoading = name;
+    this.http.post(`/api/raspberry-pi/containers/${name}/${action}`, {}).subscribe({
+      next: () => { this.piContainerLoading = null; },
+      error: () => { this.piContainerLoading = null; }
+    });
+  }
+
   // ── Game servers ──────────────────────────────────────────────────────────
 
   protected toggleGameServer(gs: GameServer): void {
@@ -130,6 +146,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.eventSource.addEventListener('game-servers', (e: MessageEvent) => {
       this.zone.run(() => {
         this.gameServers = (JSON.parse(e.data) as GameServersResponse).gameServers;
+      });
+    });
+
+    this.eventSource.addEventListener('raspberry-pi', (e: MessageEvent) => {
+      this.zone.run(() => {
+        this.raspberryPi = (JSON.parse(e.data) as { raspberryPi: RaspberryPiStats | null }).raspberryPi;
       });
     });
 
@@ -171,4 +193,14 @@ interface ProxmoxSummary {
   host: { cpu: number; ram_used_gb: number; ram_total_gb: number; uptime_seconds: number; };
   vms: PveVM[]; lxcs: PveVM[]; storage: PveStorage[];
   alerts: Alert[]; tasks: Task[];
+}
+
+interface PiContainer { name: string; status: string; image: string; ports: string[]; }
+
+interface RaspberryPiStats {
+  cpu: number;
+  ram_used_gb: number;
+  ram_total_gb: number;
+  uptime_seconds: number;
+  containers: PiContainer[];
 }
