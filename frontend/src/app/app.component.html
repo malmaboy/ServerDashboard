@@ -158,6 +158,56 @@
     </div>
   </section>
 
+  <!-- Raspberry Pi 2 -->
+  <section class="infra-section">
+    <div class="infra-header">
+      <h2 class="infra-title">Raspberry Pi 2</h2>
+      <span class="infra-node">192.168.1.17</span>
+    </div>
+
+    <ng-container *ngIf="raspberryPi2; else pi2Unavailable">
+      <div class="host-stats">
+        <div class="stat-box">
+          <span class="stat-label">CPU</span>
+          <span class="stat-value">{{ raspberryPi2.cpu }}%</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">RAM</span>
+          <span class="stat-value">{{ raspberryPi2.ram_used_gb }} <small>/ {{ raspberryPi2.ram_total_gb }} GB</small></span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Uptime</span>
+          <span class="stat-value">{{ uptimeLabel(raspberryPi2.uptime_seconds) }}</span>
+        </div>
+      </div>
+
+      <div class="vm-list" *ngIf="raspberryPi2.containers && raspberryPi2.containers.length > 0">
+        <div class="vm-row" *ngFor="let c of raspberryPi2.containers">
+          <span class="vm-dot" [class.vm-dot--running]="c.status === 'running'" [class.vm-dot--stopped]="c.status !== 'running'"></span>
+          <span class="vm-id"></span>
+          <span class="vm-name">{{ c.name }}</span>
+          <span class="vm-tag vm-tag--lxc">container</span>
+          <span class="vm-stat">{{ piImageLabel(c.image) }}</span>
+          <span class="vm-stat">{{ piPortsLabel(c.ports) }}</span>
+          <div class="vm-ram-bar"></div>
+          <div class="vm-actions">
+            <button *ngIf="c.status !== 'running'" class="vm-btn vm-btn--start"
+              [disabled]="pi2ContainerLoading !== null"
+              (click)="controlPi2Container(c.name, 'start')" title="Start">▶</button>
+            <button *ngIf="c.status === 'running'" class="vm-btn vm-btn--stop"
+              [disabled]="pi2ContainerLoading !== null"
+              (click)="controlPi2Container(c.name, 'stop')" title="Stop">■</button>
+            <span *ngIf="pi2ContainerLoading === c.name" class="vm-spinner">⟳</span>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-template #pi2Unavailable>
+      <p style="color: var(--text-muted, #6b7280); font-size: 0.85rem; margin: 0.5rem 0 0;">Stats indisponíveis — agente não está a correr em 192.168.1.17:9090</p>
+    </ng-template>
+  </section>
+
   <!-- Game Servers -->
   <section *ngIf="gameServers.length > 0" class="gs-section">
     <h2 class="gs-section-title">Game Servers</h2>

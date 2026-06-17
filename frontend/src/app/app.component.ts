@@ -22,7 +22,9 @@ export class AppComponent implements OnInit, OnDestroy {
   protected proxmox: ProxmoxSummary | null = null;
   protected vmActionLoading: string | null = null;
   protected raspberryPi: RaspberryPiStats | null = null;
+  protected raspberryPi2: RaspberryPiStats | null = null;
   protected piContainerLoading: string | null = null;
+  protected pi2ContainerLoading: string | null = null;
 
   ngOnInit(): void { this.connectSSE(); }
   ngOnDestroy(): void { this.eventSource?.close(); }
@@ -119,6 +121,15 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
+  protected controlPi2Container(name: string, action: 'start' | 'stop'): void {
+    if (this.pi2ContainerLoading) return;
+    this.pi2ContainerLoading = name;
+    this.http.post(`/api/raspberry-pi-2/containers/${name}/${action}`, {}).subscribe({
+      next: () => { this.pi2ContainerLoading = null; },
+      error: () => { this.pi2ContainerLoading = null; }
+    });
+  }
+
   // ── Game servers ──────────────────────────────────────────────────────────
 
   protected toggleGameServer(gs: GameServer): void {
@@ -158,6 +169,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.eventSource.addEventListener('raspberry-pi', (e: MessageEvent) => {
       this.zone.run(() => {
         this.raspberryPi = (JSON.parse(e.data) as { raspberryPi: RaspberryPiStats | null }).raspberryPi;
+      });
+    });
+
+    this.eventSource.addEventListener('raspberry-pi-2', (e: MessageEvent) => {
+      this.zone.run(() => {
+        this.raspberryPi2 = (JSON.parse(e.data) as { raspberryPi2: RaspberryPiStats | null }).raspberryPi2;
       });
     });
 

@@ -84,6 +84,14 @@ APP_CARDS: list[AppCard] = [
         "description": "Raspberry Pi in the garage — Arduino bridge server for IoT sensors and automations.",
     },
     {
+        "name": "Raspberry Pi 2",
+        "url": "ssh://user@192.168.1.17",
+        "healthUrl": "192.168.1.17:22",
+        "healthType": "tcp",
+        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80",
+        "description": "Second Raspberry Pi — 192.168.1.17.",
+    },
+    {
         "name": "Creality 3D Printer",
         "url": "http://192.168.1.116/",
         "healthUrl": "http://192.168.1.116/",

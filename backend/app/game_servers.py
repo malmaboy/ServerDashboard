@@ -69,6 +69,7 @@ GAME_CONFIGS: dict[str, dict] = {
             "TZ": "Europe/Lisbon",
             "MEMORY": "3072m",
             "BRANCH": "unstable",
+            "SERVER_BRANCH": "unstable",
         },
         "volumes": {
             "/home/docker-host-debian/stacks/GameServers/project-zomboid-b42/data/Zomboid": {

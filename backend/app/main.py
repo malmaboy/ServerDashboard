@@ -12,7 +12,12 @@ from sse_starlette.sse import EventSourceResponse
 
 from .app_config import APP_CARDS, AppCard
 from .game_servers import list_game_servers, router as game_servers_router
-from .raspberry_pi import control_pi_container, get_raspberry_pi_stats
+from .raspberry_pi import (
+    control_pi_container,
+    control_pi_2_container,
+    get_raspberry_pi_stats,
+    get_raspberry_pi_2_stats,
+)
 from .proxmox.alerts import (
     check_resource_alerts_discord,
     check_service_transitions,
@@ -146,6 +151,19 @@ async def pi_container_action(name: str, action: str) -> dict:
         raise HTTPException(500, str(exc))
 
 
+@app.post("/api/raspberry-pi-2/containers/{name}/{action}")
+async def pi_2_container_action(name: str, action: str) -> dict:
+    if action not in ("start", "stop"):
+        raise HTTPException(400, "action must be start or stop")
+    try:
+        await control_pi_2_container(name, action)
+        logger.info("Pi 2 container %s %s", action, name)
+        return {"status": "ok"}
+    except Exception as exc:
+        logger.error("Pi 2 container action failed: %s", exc)
+        raise HTTPException(500, str(exc))
+
+
 @app.post("/api/proxmox/vms/{vmid}/{action}")
 async def vm_action(vmid: int, action: str, vm_type: str = "qemu") -> dict:
     if action not in ("start", "stop", "reboot"):
@@ -173,11 +191,12 @@ async def events(request: Request):
                     logger.info("SSE client disconnected")
                     break
 
-                apps_data, proxmox_data, game_data, pi_data = await asyncio.gather(
+                apps_data, proxmox_data, game_data, pi_data, pi2_data = await asyncio.gather(
                     _fetch_apps(),
                     _fetch_proxmox(),
                     run_in_threadpool(list_game_servers),
                     get_raspberry_pi_stats(),
+                    get_raspberry_pi_2_stats(),
                 )
 
                 await asyncio.gather(
@@ -189,6 +208,7 @@ async def events(request: Request):
                 yield {"event": "proxmox", "data": json.dumps(proxmox_data)}
                 yield {"event": "game-servers", "data": json.dumps({"gameServers": game_data})}
                 yield {"event": "raspberry-pi", "data": json.dumps({"raspberryPi": pi_data})}
+                yield {"event": "raspberry-pi-2", "data": json.dumps({"raspberryPi2": pi2_data})}
 
                 await asyncio.sleep(15)
         except asyncio.CancelledError:
