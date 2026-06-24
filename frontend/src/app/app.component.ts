@@ -33,6 +33,7 @@ export class AppComponent implements OnInit, OnDestroy {
   protected trackByGame(_: number, g: GameServer): string { return g.game; }
   protected trackByVmid(_: number, v: PveVM): number { return v.vmid; }
   protected trackByStorage(_: number, s: PveStorage): string { return s.name; }
+  protected trackByDisk(_: number, d: PhysicalDisk): string { return d.dev; }
   protected trackByKey(_: number, a: Alert): string { return a.key; }
   protected trackByUpid(_: number, t: Task): string { return t.starttime + t.type + t.id; }
 
@@ -212,9 +213,23 @@ interface Task {
   starttime: number; duration_secs: number | null;
 }
 
+interface DiskPartition {
+  name: string; service: string;
+  total_gb: number; used_gb: number; pct: number;
+  source: 'proxmox' | 'mount';
+  error?: string;
+}
+
+interface PhysicalDisk {
+  dev: string; model: string; size_gb: number;
+  type: string; health: string;
+  partitions: DiskPartition[];
+}
+
 interface ProxmoxSummary {
   host: { cpu: number; ram_used_gb: number; ram_total_gb: number; uptime_seconds: number; };
   vms: PveVM[]; lxcs: PveVM[]; storage: PveStorage[];
+  disks: PhysicalDisk[];
   alerts: Alert[]; tasks: Task[];
 }
 

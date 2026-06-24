@@ -100,6 +100,40 @@
       </div>
     </div>
 
+    <!-- Physical Disk Layout -->
+    <div class="disk-layout" *ngIf="proxmox.disks && proxmox.disks.length > 0">
+      <h3 class="storage-title">Discos Físicos</h3>
+      <div class="disk-item" *ngFor="let disk of proxmox.disks; trackBy: trackByDisk">
+        <div class="disk-header">
+          <span class="disk-type-icon">{{ disk.type === 'nvme' ? '⚡' : '💿' }}</span>
+          <div class="disk-meta">
+            <span class="disk-model">{{ disk.model }}</span>
+            <span class="disk-meta-line">
+              {{ disk.dev }} &nbsp;·&nbsp; {{ disk.size_gb }} GB &nbsp;·&nbsp; {{ disk.type.toUpperCase() }}
+              <span class="health-ok" *ngIf="disk.health === 'PASSED'">&nbsp;·&nbsp; {{ disk.health }}</span>
+              <span class="health-warn" *ngIf="disk.health && disk.health !== 'PASSED'">&nbsp;·&nbsp; {{ disk.health }}</span>
+            </span>
+          </div>
+        </div>
+        <div class="disk-partitions">
+          <div class="disk-partition" *ngFor="let p of disk.partitions">
+            <div class="storage-row">
+              <span class="storage-name">{{ p.name }}</span>
+              <span class="disk-service">{{ p.service }}</span>
+              <ng-container *ngIf="!p.error">
+                <span class="storage-usage" [class.warn]="storageWarn(p.pct)">{{ p.pct }}%</span>
+                <span class="storage-nums">{{ p.used_gb }} / {{ p.total_gb }} GB</span>
+              </ng-container>
+              <span class="disk-unavailable" *ngIf="p.error">indisponível</span>
+            </div>
+            <div class="storage-track" *ngIf="!p.error">
+              <div class="storage-fill" [style.width.%]="p.pct" [class.warn]="storageWarn(p.pct)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Recent tasks -->
     <div class="tasks-section" *ngIf="proxmox.tasks?.length">
       <h3 class="tasks-title">Recent Tasks</h3>

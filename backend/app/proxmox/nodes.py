@@ -1,4 +1,5 @@
 import logging
+import os
 
 from .client import PROXMOX_NODE, pve_get, pve_post
 
@@ -81,6 +82,98 @@ async def get_storage() -> list[dict]:
     except Exception as exc:
         logger.warning("Proxmox storage failed: %s", exc)
         return []
+
+
+# Which Proxmox storage pool lives on which physical device
+_STORAGE_TO_DISK: dict[str, str] = {
+    "local":     "/dev/nvme0n1",
+    "local-lvm": "/dev/nvme0n1",
+    "hdd4tb":    "/dev/sda",
+}
+
+# Human-readable service labels for each pool
+_POOL_LABELS: dict[str, str] = {
+    "local":     "Proxmox OS, ISOs, Backups",
+    "local-lvm": "VMs & LXCs",
+    "hdd4tb":    "Storage pool (sda2)",
+}
+
+# Mount points that are bind-mounted into this container
+_MOUNT_POINTS: list[dict] = [
+    {"name": "Immich", "disk": "/dev/sda", "path": "/mnt/immich", "service": "Immich (photos + DB)"},
+    # NAS (sda1) is on Proxmox host only — not mounted here, shown as unavailable
+    {"name": "NAS", "disk": "/dev/sda", "path": None, "service": "NAS / Samba"},
+]
+
+
+def _statvfs(path: str) -> dict | None:
+    try:
+        st = os.statvfs(path)
+        total = st.f_blocks * st.f_frsize
+        avail = st.f_bavail * st.f_frsize
+        used = total - avail
+        return {
+            "total_gb": round(total / 1024**3, 1),
+            "used_gb": round(used / 1024**3, 1),
+            "pct": round(used / total * 100, 1) if total else 0,
+        }
+    except OSError:
+        return None
+
+
+async def get_disk_layout(storage: list[dict]) -> list[dict]:
+    try:
+        raw_disks = await pve_get(f"/nodes/{PROXMOX_NODE}/disks/list")
+    except Exception as exc:
+        logger.warning("Disk list failed: %s", exc)
+        return []
+
+    disks: dict[str, dict] = {}
+    for d in raw_disks:
+        dev = d.get("devpath", "")
+        if not dev:
+            continue
+        model = (d.get("model") or d.get("vendor") or "Unknown").strip()
+        disks[dev] = {
+            "dev": dev,
+            "model": model,
+            "size_gb": round(d.get("size", 0) / 1024**3),
+            "type": d.get("type", ""),
+            "health": d.get("health", ""),
+            "partitions": [],
+        }
+
+    pool_by_name = {s["name"]: s for s in storage}
+    for pool_name, disk_dev in _STORAGE_TO_DISK.items():
+        if disk_dev not in disks or pool_name not in pool_by_name:
+            continue
+        s = pool_by_name[pool_name]
+        disks[disk_dev]["partitions"].append({
+            "name": pool_name,
+            "service": _POOL_LABELS.get(pool_name, ""),
+            "total_gb": s["total_gb"],
+            "used_gb": s["used_gb"],
+            "pct": s["pct"],
+            "source": "proxmox",
+        })
+
+    for mp in _MOUNT_POINTS:
+        disk_dev = mp["disk"]
+        if disk_dev not in disks:
+            continue
+        stats = _statvfs(mp["path"]) if mp["path"] else None
+        partition: dict = {
+            "name": mp["name"],
+            "service": mp["service"],
+            "source": "mount",
+        }
+        if stats:
+            partition.update(stats)
+        else:
+            partition.update({"total_gb": 0, "used_gb": 0, "pct": 0, "error": "unavailable"})
+        disks[disk_dev]["partitions"].append(partition)
+
+    return sorted(disks.values(), key=lambda d: (d["type"] != "nvme", d["dev"]))
 
 
 async def control_vm(vmid: int, vm_type: str, action: str) -> str | None:

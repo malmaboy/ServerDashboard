@@ -23,7 +23,7 @@ from .proxmox.alerts import (
     check_service_transitions,
     compute_resource_alerts,
 )
-from .proxmox.nodes import control_vm, get_lxcs, get_node_status, get_storage, get_vms
+from .proxmox.nodes import control_vm, get_disk_layout, get_lxcs, get_node_status, get_storage, get_vms
 from .proxmox.tasks import get_recent_tasks
 
 logging.basicConfig(
@@ -115,12 +115,14 @@ async def _fetch_proxmox() -> dict:
         get_storage(),
         get_recent_tasks(),
     )
+    disks = await get_disk_layout(storage)
     alerts = compute_resource_alerts(host, storage)
     return {
         "host": host,
         "vms": vms,
         "lxcs": lxcs,
         "storage": storage,
+        "disks": disks,
         "tasks": tasks,
         "alerts": alerts,
     }
