@@ -61,8 +61,8 @@ APP_CARDS: list[AppCard] = [
     },
     {
         "name": "Home Assistant",
-        "url": "http://192.168.0.79:8123/",
-        "healthUrl": "http://192.168.0.79:8123/",
+        "url": "http://192.168.0.214:8123/",
+        "healthUrl": "http://192.168.0.214:8123/",
         "healthType": "http",
         "imageUrl": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1400&q=80",
         "description": "Smart home hub with quick access to automations, devices and daily routines.",
