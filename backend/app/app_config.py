@@ -28,6 +28,14 @@ APP_CARDS: list[AppCard] = [
         "description": "Quick hub to manage containers, Docker stacks and homelab operations in a single panel.",
     },
     {
+        "name": "Uptime Kuma",
+        "url": "http://192.168.0.133:3002/",
+        "healthUrl": "http://192.168.0.133:3002/",
+        "healthType": "http",
+        "imageUrl": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1400&q=80",
+        "description": "Uptime monitoring for all homelab services, with status history and alerting.",
+    },
+    {
         "name": "Nginx Proxy Manager",
         "url": "http://192.168.0.133:81/",
         "healthUrl": "http://192.168.0.133:81/",
@@ -42,6 +50,14 @@ APP_CARDS: list[AppCard] = [
         "healthType": "http",
         "imageUrl": "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=1400&q=80",
         "description": "Dedicated garden panel with automations, sensors and daily control in one place.",
+    },
+    {
+        "name": "Immich",
+        "url": "http://192.168.0.133:2283/",
+        "healthUrl": "http://192.168.0.133:2283/",
+        "healthType": "http",
+        "imageUrl": "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?auto=format&fit=crop&w=1400&q=80",
+        "description": "Self-hosted photo and video backup with facial recognition and mobile sync.",
     },
     {
         "name": "Home Assistant",

@@ -89,6 +89,7 @@ _STORAGE_TO_DISK: dict[str, str] = {
     "local":     "/dev/nvme0n1",
     "local-lvm": "/dev/nvme0n1",
     "hdd4tb":    "/dev/sda",
+    "nas":       "/dev/sda",
 }
 
 # Human-readable service labels for each pool
@@ -96,13 +97,14 @@ _POOL_LABELS: dict[str, str] = {
     "local":     "Proxmox OS, ISOs, Backups",
     "local-lvm": "VMs & LXCs",
     "hdd4tb":    "Storage pool (sda2)",
+    "nas":       "NAS / Samba (sda1)",
 }
 
-# Mount points that are bind-mounted into this container
+# Mount points that are bind-mounted into this container (docker-host).
+# NAS lives on the Proxmox host's own disk (sda1), not on docker-host, so it's
+# reported via the "nas" Proxmox storage pool above instead of a local mount.
 _MOUNT_POINTS: list[dict] = [
     {"name": "Immich", "disk": "/dev/sda", "path": "/mnt/immich", "service": "Immich (photos + DB)"},
-    # NAS (sda1) is on Proxmox host only — not mounted here, shown as unavailable
-    {"name": "NAS", "disk": "/dev/sda", "path": None, "service": "NAS / Samba"},
 ]
 
 
