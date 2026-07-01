@@ -7,7 +7,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-PROXMOX_HOST = os.getenv("PROXMOX_HOST", "192.168.1.200")
+PROXMOX_HOST = os.getenv("PROXMOX_HOST", "192.168.0.200")
 PROXMOX_PORT = os.getenv("PROXMOX_PORT", "8006")
 PROXMOX_USER = os.getenv("PROXMOX_USER", "root@pam")
 PROXMOX_PASSWORD = os.getenv("PROXMOX_PASSWORD", "")

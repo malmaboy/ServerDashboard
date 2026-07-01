@@ -41,7 +41,7 @@
   <section *ngIf="proxmox" class="infra-section">
     <div class="infra-header">
       <h2 class="infra-title">Infrastructure</h2>
-      <span class="infra-node">pve &mdash; 192.168.1.200</span>
+      <span class="infra-node">pve &mdash; 192.168.0.200</span>
     </div>
 
     <!-- Host metrics -->
@@ -152,7 +152,7 @@
   <section *ngIf="raspberryPi" class="infra-section">
     <div class="infra-header">
       <h2 class="infra-title">Raspberry Pi</h2>
-      <span class="infra-node">assistant &mdash; 192.168.1.120</span>
+      <span class="infra-node">assistant &mdash; 192.168.0.130</span>
     </div>
 
     <div class="host-stats">
@@ -196,7 +196,7 @@
   <section class="infra-section">
     <div class="infra-header">
       <h2 class="infra-title">Raspberry Pi 2</h2>
-      <span class="infra-node">192.168.1.17</span>
+      <span class="infra-node">192.168.0.183</span>
     </div>
 
     <ng-container *ngIf="raspberryPi2; else pi2Unavailable">
@@ -238,7 +238,7 @@
     </ng-container>
 
     <ng-template #pi2Unavailable>
-      <p style="color: var(--text-muted, #6b7280); font-size: 0.85rem; margin: 0.5rem 0 0;">Stats indisponíveis — agente não está a correr em 192.168.1.17:9090</p>
+      <p style="color: var(--text-muted, #6b7280); font-size: 0.85rem; margin: 0.5rem 0 0;">Stats indisponíveis — agente não está a correr em 192.168.0.183:9090</p>
     </ng-template>
   </section>
 

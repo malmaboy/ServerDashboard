@@ -3,8 +3,8 @@ import os
 
 import httpx
 
-RASPBERRY_PI_URL = os.getenv("RASPBERRY_PI_URL", "http://192.168.1.120:9090")
-RASPBERRY_PI_2_URL = os.getenv("RASPBERRY_PI_2_URL", "http://192.168.1.17:9090")
+RASPBERRY_PI_URL = os.getenv("RASPBERRY_PI_URL", "http://192.168.0.130:9090")
+RASPBERRY_PI_2_URL = os.getenv("RASPBERRY_PI_2_URL", "http://192.168.0.183:9090")
 
 logger = logging.getLogger(__name__)
 
