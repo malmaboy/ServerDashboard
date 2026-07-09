@@ -148,6 +148,47 @@
     </div>
   </section>
 
+  <!-- UPS (NUT) -->
+  <section class="infra-section">
+    <div class="infra-header">
+      <h2 class="infra-title">UPS</h2>
+      <span class="infra-node">{{ ups?.name || 'gembird' }} &mdash; 192.168.0.200</span>
+      <span class="ups-status-pill" *ngIf="ups"
+            [class.ups-status-pill--ok]="!ups.onBattery && !ups.lowBattery"
+            [class.ups-status-pill--battery]="ups.onBattery && !ups.lowBattery"
+            [class.ups-status-pill--low]="ups.lowBattery">
+        {{ upsStatusLabel(ups) }}
+      </span>
+    </div>
+
+    <ng-container *ngIf="ups; else upsUnavailable">
+      <div class="host-stats">
+        <div class="stat-box">
+          <span class="stat-label">Battery</span>
+          <span class="stat-value">{{ ups.batteryCharge }}<small>%</small></span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Load</span>
+          <span class="stat-value">{{ ups.load }}<small>%</small></span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Input</span>
+          <span class="stat-value">{{ ups.inputVoltage }} <small>V</small></span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Output</span>
+          <span class="stat-value">{{ ups.outputVoltage }} <small>V</small></span>
+        </div>
+      </div>
+      <div class="storage-track">
+        <div class="storage-fill" [style.width.%]="ups.batteryCharge || 0" [class.warn]="(ups.batteryCharge || 0) < 50"></div>
+      </div>
+    </ng-container>
+    <ng-template #upsUnavailable>
+      <p class="gs-section-note">UPS data unavailable — check NUT service on Proxmox.</p>
+    </ng-template>
+  </section>
+
   <!-- Raspberry Pi -->
   <section *ngIf="raspberryPi" class="infra-section">
     <div class="infra-header">

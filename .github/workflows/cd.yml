@@ -54,6 +54,11 @@ jobs:
             echo "PROXMOX_NODE=${{ secrets.PROXMOX_NODE }}"
             echo "ALLOWED_ORIGIN=${{ secrets.ALLOWED_ORIGIN }}"
             echo "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}"
+            echo "NUT_HOST=${{ secrets.NUT_HOST }}"
+            echo "NUT_PORT=${{ secrets.NUT_PORT }}"
+            echo "NUT_USER=${{ secrets.NUT_USER }}"
+            echo "NUT_PASSWORD=${{ secrets.NUT_PASSWORD }}"
+            echo "NUT_UPS_NAME=${{ secrets.NUT_UPS_NAME }}"
           } > "${DEPLOY_DIR}/backend/.env"
 
       - name: Verify Docker

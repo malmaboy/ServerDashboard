@@ -25,6 +25,7 @@ export class AppComponent implements OnInit, OnDestroy {
   protected raspberryPi2: RaspberryPiStats | null = null;
   protected piContainerLoading: string | null = null;
   protected pi2ContainerLoading: string | null = null;
+  protected ups: UpsSummary | null = null;
 
   ngOnInit(): void { this.connectSSE(); }
   ngOnDestroy(): void { this.eventSource?.close(); }
@@ -45,6 +46,12 @@ export class AppComponent implements OnInit, OnDestroy {
 
   protected isOnline(status: string): boolean { return status === 'Online'; }
   protected isRunning(gs: GameServer): boolean { return gs.status === 'running'; }
+
+  protected upsStatusLabel(ups: UpsSummary): string {
+    if (ups.lowBattery) return 'Low Battery';
+    if (ups.onBattery) return 'On Battery';
+    return 'Online';
+  }
 
   protected gsLabel(gs: GameServer): string {
     if (gs.status === 'running') return 'Running';
@@ -179,6 +186,12 @@ export class AppComponent implements OnInit, OnDestroy {
       });
     });
 
+    this.eventSource.addEventListener('ups', (e: MessageEvent) => {
+      this.zone.run(() => {
+        this.ups = (JSON.parse(e.data) as { ups: UpsSummary | null }).ups;
+      });
+    });
+
     this.eventSource.onerror = () => {
       this.zone.run(() => { if (this.loading) this.error = 'Connecting to backend...'; });
       this.eventSource?.close();
@@ -241,4 +254,19 @@ interface RaspberryPiStats {
   ram_total_gb: number;
   uptime_seconds: number;
   containers: PiContainer[];
+}
+
+interface UpsSummary {
+  name: string;
+  status: string;
+  onBattery: boolean;
+  lowBattery: boolean;
+  batteryCharge: number | null;
+  batteryVoltage: number | null;
+  inputVoltage: number | null;
+  outputVoltage: number | null;
+  load: number | null;
+  temperature: number | null;
+  beeperStatus: string | null;
+  firmware: string | null;
 }

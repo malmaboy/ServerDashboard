@@ -322,6 +322,29 @@ h2 {
   font-family: monospace;
 }
 
+.ups-status-pill {
+  margin-left: auto;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.ups-status-pill--ok {
+  background: #22c55e;
+  color: #fff;
+}
+
+.ups-status-pill--battery {
+  background: #f59e0b;
+  color: #082f49;
+}
+
+.ups-status-pill--low {
+  background: #ef4444;
+  color: #fff;
+}
+
 /* Host stats row */
 
 .host-stats {

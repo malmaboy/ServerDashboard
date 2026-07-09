@@ -25,6 +25,7 @@ from .proxmox.alerts import (
 )
 from .proxmox.nodes import control_vm, get_disk_layout, get_lxcs, get_node_status, get_storage, get_vms
 from .proxmox.tasks import get_recent_tasks
+from .ups import get_ups_summary
 
 logging.basicConfig(
     level=logging.INFO,
@@ -140,6 +141,11 @@ async def get_proxmox_summary() -> dict:
     return await _fetch_proxmox()
 
 
+@app.get("/api/ups/summary")
+async def get_ups() -> dict:
+    return {"ups": await get_ups_summary()}
+
+
 @app.post("/api/raspberry-pi/containers/{name}/{action}")
 async def pi_container_action(name: str, action: str) -> dict:
     if action not in ("start", "stop"):
@@ -193,12 +199,13 @@ async def events(request: Request):
                     logger.info("SSE client disconnected")
                     break
 
-                apps_data, proxmox_data, game_data, pi_data, pi2_data = await asyncio.gather(
+                apps_data, proxmox_data, game_data, pi_data, pi2_data, ups_data = await asyncio.gather(
                     _fetch_apps(),
                     _fetch_proxmox(),
                     run_in_threadpool(list_game_servers),
                     get_raspberry_pi_stats(),
                     get_raspberry_pi_2_stats(),
+                    get_ups_summary(),
                 )
 
                 await asyncio.gather(
@@ -211,6 +218,7 @@ async def events(request: Request):
                 yield {"event": "game-servers", "data": json.dumps({"gameServers": game_data})}
                 yield {"event": "raspberry-pi", "data": json.dumps({"raspberryPi": pi_data})}
                 yield {"event": "raspberry-pi-2", "data": json.dumps({"raspberryPi2": pi2_data})}
+                yield {"event": "ups", "data": json.dumps({"ups": ups_data})}
 
                 await asyncio.sleep(15)
         except asyncio.CancelledError:
