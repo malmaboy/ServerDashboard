@@ -60,6 +60,22 @@ APP_CARDS: list[AppCard] = [
         "description": "Self-hosted photo and video backup with facial recognition and mobile sync.",
     },
     {
+        "name": "odysseus",
+        "url": "http://192.168.0.212:7000/",
+        "healthUrl": "http://192.168.0.212:7000/",
+        "healthType": "http",
+        "imageUrl": "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=1400&q=80",
+        "description": "Self-hosted AI workspace on ai-local — chat, agents, research, documents, email, notes and calendar.",
+    },
+    {
+        "name": "Open WebUI",
+        "url": "http://192.168.0.212:3000/",
+        "healthUrl": "http://192.168.0.212:3000/",
+        "healthType": "http",
+        "imageUrl": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1400&q=80",
+        "description": "Chat frontend for local Ollama models running on ai-local.",
+    },
+    {
         "name": "Home Assistant",
         "url": "http://192.168.0.214:8123/",
         "healthUrl": "http://192.168.0.214:8123/",

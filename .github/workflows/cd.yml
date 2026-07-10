@@ -59,6 +59,7 @@ jobs:
             echo "NUT_USER=${{ secrets.NUT_USER }}"
             echo "NUT_PASSWORD=${{ secrets.NUT_PASSWORD }}"
             echo "NUT_UPS_NAME=${{ secrets.NUT_UPS_NAME }}"
+            echo "GPU_AGENT_URL=${{ secrets.GPU_AGENT_URL }}"
           } > "${DEPLOY_DIR}/backend/.env"
 
       - name: Verify Docker

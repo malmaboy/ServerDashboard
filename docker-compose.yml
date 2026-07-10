@@ -3,6 +3,7 @@ services:
     build:
       context: ./backend
     container_name: proxmox-dashboard-backend
+    restart: unless-stopped
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
@@ -15,6 +16,7 @@ services:
     build:
       context: ./frontend
     container_name: proxmox-dashboard-frontend
+    restart: unless-stopped
     depends_on:
       - backend
     ports:

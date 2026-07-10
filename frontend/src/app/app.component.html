@@ -189,6 +189,41 @@
     </ng-template>
   </section>
 
+  <!-- GPU -->
+  <section class="infra-section">
+    <div class="infra-header">
+      <h2 class="infra-title">GPU</h2>
+      <span class="infra-node">{{ gpu?.name || 'pve' }} &mdash; 192.168.0.200</span>
+    </div>
+
+    <ng-container *ngIf="gpu; else gpuUnavailable">
+      <div class="host-stats">
+        <div class="stat-box">
+          <span class="stat-label">Usage</span>
+          <span class="stat-value">{{ gpu.gpuUtilPercent }}<small>%</small></span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">VRAM</span>
+          <span class="stat-value">{{ gpu.vramUsedMb }} <small>/ {{ gpu.vramTotalMb }} MB</small></span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Temp</span>
+          <span class="stat-value">{{ gpu.temperatureC }}<small>°C</small></span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Power</span>
+          <span class="stat-value">{{ gpu.powerW }} <small>W</small></span>
+        </div>
+      </div>
+      <div class="storage-track">
+        <div class="storage-fill" [style.width.%]="gpu.gpuUtilPercent" [class.warn]="gpu.gpuUtilPercent >= 80"></div>
+      </div>
+    </ng-container>
+    <ng-template #gpuUnavailable>
+      <p class="gs-section-note">GPU data unavailable — check gpu-agent service on Proxmox.</p>
+    </ng-template>
+  </section>
+
   <!-- Raspberry Pi -->
   <section *ngIf="raspberryPi" class="infra-section">
     <div class="infra-header">

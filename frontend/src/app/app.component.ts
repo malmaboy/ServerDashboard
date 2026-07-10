@@ -26,6 +26,7 @@ export class AppComponent implements OnInit, OnDestroy {
   protected piContainerLoading: string | null = null;
   protected pi2ContainerLoading: string | null = null;
   protected ups: UpsSummary | null = null;
+  protected gpu: GpuStats | null = null;
 
   ngOnInit(): void { this.connectSSE(); }
   ngOnDestroy(): void { this.eventSource?.close(); }
@@ -192,6 +193,12 @@ export class AppComponent implements OnInit, OnDestroy {
       });
     });
 
+    this.eventSource.addEventListener('gpu', (e: MessageEvent) => {
+      this.zone.run(() => {
+        this.gpu = (JSON.parse(e.data) as { gpu: GpuStats | null }).gpu;
+      });
+    });
+
     this.eventSource.onerror = () => {
       this.zone.run(() => { if (this.loading) this.error = 'Connecting to backend...'; });
       this.eventSource?.close();
@@ -269,4 +276,14 @@ interface UpsSummary {
   temperature: number | null;
   beeperStatus: string | null;
   firmware: string | null;
+}
+
+interface GpuStats {
+  name: string;
+  gpuUtilPercent: number;
+  memUtilPercent: number;
+  vramUsedMb: number;
+  vramTotalMb: number;
+  temperatureC: number;
+  powerW: number;
 }
