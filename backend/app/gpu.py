@@ -3,7 +3,7 @@ import os
 
 import httpx
 
-GPU_AGENT_URL = os.getenv("GPU_AGENT_URL", "http://192.168.0.200:9092")
+GPU_AGENT_URL = os.getenv("GPU_AGENT_URL", "http://192.168.0.212:9092")
 
 logger = logging.getLogger(__name__)
 
