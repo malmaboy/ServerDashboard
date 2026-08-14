@@ -17,7 +17,8 @@ Dashboard para monitorização do servidor doméstico, com integração Proxmox 
 - **Proxmox VE** — estado do host (CPU, RAM, uptime), lista de VMs e LXCs com controlo (start / stop / reboot), storage, tarefas recentes
 - **Alertas de recursos** — notificação Discord quando RAM ≥ 85% ou storage ≥ 80%
 - **Alertas de serviço** — notificação Discord quando um serviço passa de Online → Offline ou vice-versa
-- **Game servers** — listagem de servidores de jogos ativos
+- **Game servers** — listagem de servidores de jogos ativos; página de controlo standalone em
+  `/control` (start/stop, sem CORS, para embutir/linkar a partir do Homepage)
 - **Real-time** — todos os dados atualizados via SSE (Server-Sent Events) a cada 15 segundos, sem polling manual
 
 ## Configuração

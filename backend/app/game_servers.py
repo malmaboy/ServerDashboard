@@ -1,6 +1,7 @@
 import docker
 from docker.errors import NotFound
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import HTMLResponse
 
 router = APIRouter()
 
@@ -169,3 +170,82 @@ def stop_game_server(game: str) -> dict:
         return {"status": "stopped", "game": game}
     except NotFound:
         raise HTTPException(404, "Container not found")
+
+
+_CONTROL_PAGE = """<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Game Servers</title>
+<style>
+  :root { color-scheme: dark; }
+  body { font-family: system-ui, sans-serif; background: #111; color: #eee; margin: 0; padding: 1.5rem; }
+  h1 { font-size: 1.1rem; font-weight: 600; margin: 0 0 1rem; }
+  .card { display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+          background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 8px;
+          padding: 0.9rem 1.1rem; margin-bottom: 0.7rem; }
+  .name { font-weight: 500; }
+  .status { font-size: 0.8rem; opacity: 0.7; }
+  .status.running { color: #4ade80; }
+  .status.exited { color: #f87171; }
+  .actions button { border: none; border-radius: 6px; padding: 0.45rem 0.9rem; font-size: 0.85rem;
+                     cursor: pointer; margin-left: 0.4rem; }
+  .start { background: #22c55e; color: #06210f; }
+  .stop { background: #ef4444; color: #2a0a0a; }
+  button:disabled { opacity: 0.35; cursor: default; }
+  .note { font-size: 0.75rem; opacity: 0.6; margin-top: 1rem; }
+</style>
+</head>
+<body>
+<h1>Game Servers</h1>
+<div id="list">A carregar…</div>
+<p class="note">Só um servidor corre de cada vez — iniciar um pára os outros.</p>
+<script>
+async function fetchServers() {
+  const res = await fetch('/api/game-servers');
+  const data = await res.json();
+  render(data.gameServers || []);
+}
+
+function render(servers) {
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  for (const s of servers) {
+    const running = s.status === 'running';
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div>
+        <div class="name">${s.displayName}</div>
+        <div class="status ${s.status}">${s.status}</div>
+      </div>
+      <div class="actions">
+        <button class="start" ${running ? 'disabled' : ''} data-game="${s.game}" data-action="start">Iniciar</button>
+        <button class="stop" ${running ? '' : 'disabled'} data-game="${s.game}" data-action="stop">Parar</button>
+      </div>`;
+    list.appendChild(card);
+  }
+  list.querySelectorAll('button').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      try {
+        await fetch(`/api/game-servers/${btn.dataset.game}/${btn.dataset.action}`, { method: 'POST' });
+      } finally {
+        await fetchServers();
+      }
+    });
+  });
+}
+
+fetchServers();
+setInterval(fetchServers, 5000);
+</script>
+</body>
+</html>
+"""
+
+
+@router.get("/control", response_class=HTMLResponse)
+def control_page() -> str:
+    return _CONTROL_PAGE
