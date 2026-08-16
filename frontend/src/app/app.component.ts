@@ -241,7 +241,7 @@ interface DiskPartition {
 }
 
 interface PhysicalDisk {
-  dev: string; model: string; size_gb: number;
+  dev: string; label: string; model: string; size_gb: number;
   type: string; health: string;
   partitions: DiskPartition[];
 }

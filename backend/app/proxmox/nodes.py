@@ -100,6 +100,12 @@ _POOL_LABELS: dict[str, str] = {
     "nas":       "NAS / Samba (sda1)",
 }
 
+# Friendly name for each physical disk (shown instead of the raw model string)
+_DISK_LABELS: dict[str, str] = {
+    "/dev/nvme0n1": "SSD (NVMe)",
+    "/dev/sda":     "HDD 4TB",
+}
+
 # Mount points that are bind-mounted into this container (docker-host).
 # NAS lives on the Proxmox host's own disk (sda1), not on docker-host, so it's
 # reported via the "nas" Proxmox storage pool above instead of a local mount.
@@ -138,6 +144,7 @@ async def get_disk_layout(storage: list[dict]) -> list[dict]:
         model = (d.get("model") or d.get("vendor") or "Unknown").strip()
         disks[dev] = {
             "dev": dev,
+            "label": _DISK_LABELS.get(dev, model),
             "model": model,
             "size_gb": round(d.get("size", 0) / 1024**3),
             "type": d.get("type", ""),

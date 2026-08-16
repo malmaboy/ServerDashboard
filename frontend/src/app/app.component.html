@@ -107,9 +107,9 @@
         <div class="disk-header">
           <span class="disk-type-icon">{{ disk.type === 'nvme' ? '⚡' : '💿' }}</span>
           <div class="disk-meta">
-            <span class="disk-model">{{ disk.model }}</span>
+            <span class="disk-model">{{ disk.label }} &nbsp;·&nbsp; {{ disk.size_gb }} GB</span>
             <span class="disk-meta-line">
-              {{ disk.dev }} &nbsp;·&nbsp; {{ disk.size_gb }} GB &nbsp;·&nbsp; {{ disk.type.toUpperCase() }}
+              {{ disk.model }} &nbsp;·&nbsp; {{ disk.dev }} &nbsp;·&nbsp; {{ disk.type.toUpperCase() }}
               <span class="health-ok" *ngIf="disk.health === 'PASSED'">&nbsp;·&nbsp; {{ disk.health }}</span>
               <span class="health-warn" *ngIf="disk.health && disk.health !== 'PASSED'">&nbsp;·&nbsp; {{ disk.health }}</span>
             </span>
