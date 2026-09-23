@@ -9,34 +9,6 @@
     </div>
   </div>
 
-  <!-- Loading / error states -->
-  <section *ngIf="loading" class="state-card"><p>Loading dashboard...</p></section>
-  <section *ngIf="error" class="state-card error"><p>{{ error }}</p></section>
-
-  <!-- App cards -->
-  <section *ngIf="!loading && !error" class="cards-grid">
-    <article *ngFor="let app of apps; trackBy: trackByUrl" class="app-card">
-      <div class="image-wrap">
-        <img [src]="app.imageUrl" [alt]="app.name" (error)="onImgError($event)" />
-        <span class="status-pill" [class.online]="isOnline(app.status)" [class.offline]="!isOnline(app.status)">
-          {{ app.status }}
-        </span>
-      </div>
-      <div class="card-body">
-        <div>
-          <h2>{{ app.name }}</h2>
-          <p>{{ app.description }}</p>
-        </div>
-        <div class="card-footer">
-          <a class="app-link" [href]="app.url" target="_blank" rel="noreferrer">Open app</a>
-          <span *ngIf="app.latencyMs != null" class="latency-badge" [class]="'latency-' + latencyClass(app.latencyMs)">
-            {{ app.latencyMs }} ms
-          </span>
-        </div>
-      </div>
-    </article>
-  </section>
-
   <!-- Infrastructure (Proxmox) -->
   <section *ngIf="proxmox" class="infra-section">
     <div class="infra-header">
@@ -339,6 +311,31 @@
                 [disabled]="gameServerLoading !== null" (click)="toggleGameServer(gs)">
           <span *ngIf="gameServerLoading !== gs.game">{{ isRunning(gs) ? 'Stop' : 'Start' }}</span>
           <span *ngIf="gameServerLoading === gs.game" class="gs-spinner">⟳</span>
+        </button>
+      </article>
+    </div>
+  </section>
+
+  <!-- Autostart -->
+  <section *ngIf="autostartServices.length > 0" class="gs-section">
+    <h2 class="gs-section-title">Autostart on Boot</h2>
+    <p class="gs-section-note">Controls whether each service comes back automatically after docker-host restarts (reboot, OOM, maintenance). Off means it stays stopped until started manually. Takes effect immediately, but a future deploy that changes that service's config resets it back to the default.</p>
+    <div class="gs-grid">
+      <article *ngFor="let svc of autostartServices; trackBy: trackByAutostartKey" class="gs-card">
+        <div class="gs-card-left">
+          <div class="gs-icon" [class.gs-icon--running]="svc.enabled" [class.gs-icon--stopped]="!svc.enabled">
+            <span>{{ svc.running ? '🟢' : '⚪' }}</span>
+          </div>
+          <div>
+            <h3 class="gs-name">{{ svc.displayName }}</h3>
+            <span class="as-category">{{ svc.category }}</span>
+          </div>
+        </div>
+        <button class="as-switch" [class.as-switch--on]="svc.enabled"
+                [disabled]="autostartLoading !== null || !svc.found" (click)="toggleAutostart(svc)"
+                [title]="svc.found ? '' : 'Container not found'">
+          <span *ngIf="autostartLoading !== svc.key" class="as-switch-knob"></span>
+          <span *ngIf="autostartLoading === svc.key" class="gs-spinner">⟳</span>
         </button>
       </article>
     </div>

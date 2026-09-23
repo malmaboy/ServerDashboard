@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
 ALERT_COOLDOWN_SECS = 3600
 
-_prev_service_states: dict[str, str] = {}
 _alert_sent_at: dict[str, float] = {}
 
 
@@ -31,22 +30,6 @@ async def _post_discord(message: str, color: int) -> None:
             )
     except Exception as exc:
         logger.warning("Discord notification failed: %s", exc)
-
-
-async def check_service_transitions(apps: list[dict]) -> None:
-    """Detect Online→Offline and Offline→Online transitions and notify Discord."""
-    for app in apps:
-        name = app["name"]
-        status = app["status"]
-        prev = _prev_service_states.get(name)
-        if prev is not None:
-            if prev == "Online" and status == "Offline":
-                logger.warning("Service went offline: %s", name)
-                await _post_discord(f"🔴 **{name}** ficou offline", color=15158332)
-            elif prev == "Offline" and status == "Online":
-                logger.info("Service recovered: %s", name)
-                await _post_discord(f"🟢 **{name}** voltou online", color=5763719)
-        _prev_service_states[name] = status
 
 
 def compute_resource_alerts(host: dict, storage: list[dict]) -> list[dict]:

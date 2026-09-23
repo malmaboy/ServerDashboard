@@ -14,11 +14,10 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly zone = inject(NgZone);
   private eventSource: EventSource | null = null;
 
-  protected apps: AppCard[] = [];
-  protected loading = true;
-  protected error = '';
   protected gameServers: GameServer[] = [];
   protected gameServerLoading: string | null = null;
+  protected autostartServices: AutostartService[] = [];
+  protected autostartLoading: string | null = null;
   protected proxmox: ProxmoxSummary | null = null;
   protected vmActionLoading: string | null = null;
   protected raspberryPi: RaspberryPiStats | null = null;
@@ -31,21 +30,14 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnInit(): void { this.connectSSE(); }
   ngOnDestroy(): void { this.eventSource?.close(); }
 
-  protected trackByUrl(_: number, a: AppCard): string { return a.url; }
   protected trackByGame(_: number, g: GameServer): string { return g.game; }
+  protected trackByAutostartKey(_: number, s: AutostartService): string { return s.key; }
   protected trackByVmid(_: number, v: PveVM): number { return v.vmid; }
   protected trackByStorage(_: number, s: PveStorage): string { return s.name; }
   protected trackByDisk(_: number, d: PhysicalDisk): string { return d.dev; }
   protected trackByKey(_: number, a: Alert): string { return a.key; }
   protected trackByUpid(_: number, t: Task): string { return t.starttime + t.type + t.id; }
 
-  protected onImgError(event: Event): void {
-    const img = event.target as HTMLImageElement;
-    img.style.display = 'none';
-    img.parentElement?.classList.add('img-fallback');
-  }
-
-  protected isOnline(status: string): boolean { return status === 'Online'; }
   protected isRunning(gs: GameServer): boolean { return gs.status === 'running'; }
 
   protected upsStatusLabel(ups: UpsSummary): string {
@@ -76,13 +68,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   protected storageWarn(pct: number): boolean { return pct >= 80; }
-
-  protected latencyClass(ms: number | null): string {
-    if (ms === null) return '';
-    if (ms < 150) return 'fast';
-    if (ms < 500) return 'medium';
-    return 'slow';
-  }
 
   protected taskTimeLabel(starttime: number): string {
     const diff = Math.floor(Date.now() / 1000) - starttime;
@@ -151,19 +136,21 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ── Autostart ─────────────────────────────────────────────────────────────
+
+  protected toggleAutostart(svc: AutostartService): void {
+    if (this.autostartLoading) return;
+    this.autostartLoading = svc.key;
+    this.http.post(`/api/autostart/${svc.key}/toggle`, {}).subscribe({
+      next: () => { this.autostartLoading = null; },
+      error: () => { this.autostartLoading = null; }
+    });
+  }
+
   // ── SSE ───────────────────────────────────────────────────────────────────
 
   private connectSSE(): void {
     this.eventSource = new EventSource('/api/events');
-
-    this.eventSource.addEventListener('apps', (e: MessageEvent) => {
-      this.zone.run(() => {
-        const data = JSON.parse(e.data) as AppResponse;
-        this.apps = data.apps;
-        this.loading = false;
-        this.error = '';
-      });
-    });
 
     this.eventSource.addEventListener('proxmox', (e: MessageEvent) => {
       this.zone.run(() => { this.proxmox = JSON.parse(e.data) as ProxmoxSummary; });
@@ -172,6 +159,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.eventSource.addEventListener('game-servers', (e: MessageEvent) => {
       this.zone.run(() => {
         this.gameServers = (JSON.parse(e.data) as GameServersResponse).gameServers;
+      });
+    });
+
+    this.eventSource.addEventListener('autostart', (e: MessageEvent) => {
+      this.zone.run(() => {
+        this.autostartServices = (JSON.parse(e.data) as AutostartResponse).autostart;
       });
     });
 
@@ -200,7 +193,6 @@ export class AppComponent implements OnInit, OnDestroy {
     });
 
     this.eventSource.onerror = () => {
-      this.zone.run(() => { if (this.loading) this.error = 'Connecting to backend...'; });
       this.eventSource?.close();
       setTimeout(() => this.connectSSE(), 5000);
     };
@@ -209,10 +201,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 
-interface AppResponse { apps: AppCard[]; }
-interface AppCard { name: string; url: string; imageUrl: string; description: string; status: string; latencyMs: number | null; }
 interface GameServersResponse { gameServers: GameServer[]; }
 interface GameServer { game: string; displayName: string; containerName: string; status: string; }
+interface AutostartResponse { autostart: AutostartService[]; }
+interface AutostartService { key: string; displayName: string; category: string; enabled: boolean; running: boolean; found: boolean; }
 
 interface PveVM {
   vmid: number; name: string; status: string;

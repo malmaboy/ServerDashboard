@@ -149,7 +149,7 @@ def start_game_server(game: str) -> dict:
             cfg["image"],
             name=cfg["container_name"],
             detach=True,
-            restart_policy={"Name": "unless-stopped"},
+            restart_policy={"Name": "no"},
             ports=cfg["ports"],
             environment=cfg["environment"],
             volumes=cfg["volumes"],

@@ -2,15 +2,13 @@ import asyncio
 import json
 import logging
 import os
-import time
 
-import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
-from .app_config import APP_CARDS, AppCard
+from .autostart import list_autostart_services, router as autostart_router
 from .game_servers import list_game_servers, router as game_servers_router
 from .raspberry_pi import (
     control_pi_container,
@@ -20,7 +18,6 @@ from .raspberry_pi import (
 )
 from .proxmox.alerts import (
     check_resource_alerts_discord,
-    check_service_transitions,
     compute_resource_alerts,
 )
 from .proxmox.nodes import control_vm, get_disk_layout, get_lxcs, get_node_status, get_storage, get_vms
@@ -43,6 +40,7 @@ app = FastAPI(
 )
 
 app.include_router(game_servers_router)
+app.include_router(autostart_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -56,57 +54,6 @@ app.add_middleware(
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
-
-
-# ── Health checks ────────────────────────────────────────────────────────────
-
-async def _check_http(client: httpx.AsyncClient, url: str) -> bool:
-    try:
-        r = await client.get(url)
-        return r.status_code < 400
-    except Exception:
-        return False
-
-
-async def _check_tcp(host: str, port: int) -> bool:
-    try:
-        _, writer = await asyncio.wait_for(
-            asyncio.open_connection(host, port), timeout=3.0
-        )
-        writer.close()
-        await writer.wait_closed()
-        return True
-    except Exception:
-        return False
-
-
-async def _check_card(client: httpx.AsyncClient, card: AppCard) -> dict:
-    t0 = time.monotonic()
-    health_type = card.get("healthType", "http")
-    if health_type.startswith("tcp"):
-        host, port_str = card["healthUrl"].rsplit(":", 1)
-        online = await _check_tcp(host, int(port_str))
-    else:
-        online = await _check_http(client, card["healthUrl"])
-    latency_ms = round((time.monotonic() - t0) * 1000)
-    status = "Online" if online else "Offline"
-    logger.debug("%s → %s (%dms)", card["name"], status, latency_ms)
-    return {
-        "name": card["name"],
-        "url": card["url"],
-        "imageUrl": card["imageUrl"],
-        "description": card["description"],
-        "status": status,
-        "latencyMs": latency_ms if online else None,
-    }
-
-
-async def _fetch_apps() -> list[dict]:
-    async with httpx.AsyncClient(verify=False, timeout=3.0) as client:
-        results = await asyncio.gather(
-            *[_check_card(client, card) for card in APP_CARDS]
-        )
-    return list(results)
 
 
 async def _fetch_proxmox() -> dict:
@@ -131,11 +78,6 @@ async def _fetch_proxmox() -> dict:
 
 
 # ── REST endpoints ───────────────────────────────────────────────────────────
-
-@app.get("/api/apps")
-async def get_apps() -> dict[str, list[dict]]:
-    return {"apps": await _fetch_apps()}
-
 
 @app.get("/api/proxmox/summary")
 async def get_proxmox_summary() -> dict:
@@ -205,24 +147,21 @@ async def events(request: Request):
                     logger.info("SSE client disconnected")
                     break
 
-                apps_data, proxmox_data, game_data, pi_data, pi2_data, ups_data, gpu_data = await asyncio.gather(
-                    _fetch_apps(),
+                proxmox_data, game_data, autostart_data, pi_data, pi2_data, ups_data, gpu_data = await asyncio.gather(
                     _fetch_proxmox(),
                     run_in_threadpool(list_game_servers),
+                    run_in_threadpool(list_autostart_services),
                     get_raspberry_pi_stats(),
                     get_raspberry_pi_2_stats(),
                     get_ups_summary(),
                     get_gpu_stats(),
                 )
 
-                await asyncio.gather(
-                    check_service_transitions(apps_data),
-                    check_resource_alerts_discord(proxmox_data.get("alerts", [])),
-                )
+                await check_resource_alerts_discord(proxmox_data.get("alerts", []))
 
-                yield {"event": "apps", "data": json.dumps({"apps": apps_data})}
                 yield {"event": "proxmox", "data": json.dumps(proxmox_data)}
                 yield {"event": "game-servers", "data": json.dumps({"gameServers": game_data})}
+                yield {"event": "autostart", "data": json.dumps({"autostart": autostart_data})}
                 yield {"event": "raspberry-pi", "data": json.dumps({"raspberryPi": pi_data})}
                 yield {"event": "raspberry-pi-2", "data": json.dumps({"raspberryPi2": pi2_data})}
                 yield {"event": "ups", "data": json.dumps({"ups": ups_data})}
