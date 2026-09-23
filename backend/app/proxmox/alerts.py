@@ -1,37 +1,3 @@
-import logging
-import os
-import time
-from datetime import datetime, timezone
-
-import httpx
-
-logger = logging.getLogger(__name__)
-
-DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
-ALERT_COOLDOWN_SECS = 3600
-
-_alert_sent_at: dict[str, float] = {}
-
-
-async def _post_discord(message: str, color: int) -> None:
-    if not DISCORD_WEBHOOK_URL:
-        return
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.post(
-                DISCORD_WEBHOOK_URL,
-                json={
-                    "embeds": [{
-                        "description": message,
-                        "color": color,
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    }]
-                },
-            )
-    except Exception as exc:
-        logger.warning("Discord notification failed: %s", exc)
-
-
 def compute_resource_alerts(host: dict, storage: list[dict]) -> list[dict]:
     """Return active resource alerts for the frontend."""
     alerts: list[dict] = []
@@ -54,14 +20,3 @@ def compute_resource_alerts(host: dict, storage: list[dict]) -> list[dict]:
             })
 
     return alerts
-
-
-async def check_resource_alerts_discord(alerts: list[dict]) -> None:
-    """Send Discord alerts for resource conditions, debounced to once per hour per key."""
-    now = time.time()
-    for alert in alerts:
-        key = alert["key"]
-        if now - _alert_sent_at.get(key, 0) >= ALERT_COOLDOWN_SECS:
-            color = 15158332 if alert["level"] == "critical" else 16776960
-            await _post_discord(f"⚠️ {alert['message']}", color=color)
-            _alert_sent_at[key] = now

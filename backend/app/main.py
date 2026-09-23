@@ -16,10 +16,7 @@ from .raspberry_pi import (
     get_raspberry_pi_stats,
     get_raspberry_pi_2_stats,
 )
-from .proxmox.alerts import (
-    check_resource_alerts_discord,
-    compute_resource_alerts,
-)
+from .proxmox.alerts import compute_resource_alerts
 from .proxmox.nodes import control_vm, get_disk_layout, get_lxcs, get_node_status, get_storage, get_vms
 from .proxmox.tasks import get_recent_tasks
 from .ups import get_ups_summary
@@ -156,8 +153,6 @@ async def events(request: Request):
                     get_ups_summary(),
                     get_gpu_stats(),
                 )
-
-                await check_resource_alerts_discord(proxmox_data.get("alerts", []))
 
                 yield {"event": "proxmox", "data": json.dumps(proxmox_data)}
                 yield {"event": "game-servers", "data": json.dumps({"gameServers": game_data})}

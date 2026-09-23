@@ -1,6 +1,6 @@
 # ServerDashboard
 
-Dashboard para monitorização do servidor doméstico, com integração Proxmox VE, alertas Discord e atualizações em tempo real via SSE.
+Dashboard para monitorização do servidor doméstico, com integração Proxmox VE e atualizações em tempo real via SSE.
 
 ## Stack
 
@@ -15,8 +15,7 @@ Dashboard para monitorização do servidor doméstico, com integração Proxmox 
 
 - **Apps** — monitorização de serviços HTTP com badge de latência (rápido / médio / lento)
 - **Proxmox VE** — estado do host (CPU, RAM, uptime), lista de VMs e LXCs com controlo (start / stop / reboot), storage, tarefas recentes
-- **Alertas de recursos** — notificação Discord quando RAM ≥ 85% ou storage ≥ 80%
-- **Alertas de serviço** — notificação Discord quando um serviço passa de Online → Offline ou vice-versa
+- **Alertas de recursos** — aviso na UI quando RAM ≥ 85% ou storage ≥ 80% (notificação Discord destes alertas passou para o bot "Server" — ver `DiscordBot/Serverbot`)
 - **Game servers** — listagem de servidores de jogos ativos; página de controlo standalone em
   `/control` (start/stop, sem CORS, para embutir/linkar a partir do Homepage)
 - **Real-time** — todos os dados atualizados via SSE (Server-Sent Events) a cada 15 segundos, sem polling manual
@@ -44,7 +43,6 @@ PROXMOX_USER=root@pam
 PROXMOX_PASSWORD=...
 PROXMOX_NODE=pve
 ALLOWED_ORIGIN=http://192.168.x.x:8081
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 ```
 
 > O ficheiro `.env` **nunca deve ser commitado** — está incluído no `.gitignore`.
@@ -77,4 +75,4 @@ O workflow:
 gh secret set --env-file backend/.env --repo malmaboy/ServerDashboard
 ```
 
-Secrets necessários: `PROXMOX_HOST`, `PROXMOX_PORT`, `PROXMOX_USER`, `PROXMOX_PASSWORD`, `PROXMOX_NODE`, `ALLOWED_ORIGIN`, `DISCORD_WEBHOOK_URL`.
+Secrets necessários: `PROXMOX_HOST`, `PROXMOX_PORT`, `PROXMOX_USER`, `PROXMOX_PASSWORD`, `PROXMOX_NODE`, `ALLOWED_ORIGIN`.
