@@ -1,6 +1,9 @@
 import docker
 from docker.errors import NotFound
 from fastapi import APIRouter, HTTPException
+from fastapi.concurrency import run_in_threadpool
+
+from .ailocal import get_odysseus_autostart, toggle_odysseus_autostart
 
 router = APIRouter()
 
@@ -35,8 +38,8 @@ def _client() -> docker.DockerClient:
         raise HTTPException(503, f"Docker daemon unavailable: {exc}")
 
 
-def list_autostart_services() -> list[dict]:
-    """Sync helper — safe to call from a thread pool."""
+def _list_local_autostart_services() -> list[dict]:
+    """Sync helper — safe to call from a thread pool. docker-host services only."""
     try:
         client = docker.from_env()
     except Exception:
@@ -75,17 +78,18 @@ def list_autostart_services() -> list[dict]:
     return result
 
 
+async def list_autostart_services() -> list[dict]:
+    local = await run_in_threadpool(_list_local_autostart_services)
+    remote = await get_odysseus_autostart()
+    return local + [remote]
+
+
 @router.get("/api/autostart")
-def get_autostart_services() -> dict:
-    return {"services": list_autostart_services()}
+async def get_autostart_services() -> dict:
+    return {"services": await list_autostart_services()}
 
 
-@router.post("/api/autostart/{key}/toggle")
-def toggle_autostart(key: str) -> dict:
-    svc = _SERVICES_BY_KEY.get(key)
-    if svc is None:
-        raise HTTPException(404, "Unknown service")
-
+def _toggle_local(svc: dict, key: str) -> dict:
     client = _client()
     containers = []
     for name in svc["containerNames"]:
@@ -105,3 +109,15 @@ def toggle_autostart(key: str) -> dict:
         container.update(restart_policy={"Name": policy})
 
     return {"key": key, "enabled": turning_on}
+
+
+@router.post("/api/autostart/{key}/toggle")
+async def toggle_autostart(key: str) -> dict:
+    if key == "odysseus":
+        return await toggle_odysseus_autostart()
+
+    svc = _SERVICES_BY_KEY.get(key)
+    if svc is None:
+        raise HTTPException(404, "Unknown service")
+
+    return await run_in_threadpool(_toggle_local, svc, key)

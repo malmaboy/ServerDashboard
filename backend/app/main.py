@@ -150,7 +150,7 @@ async def events(request: Request):
                 proxmox_data, game_data, autostart_data, pi_data, pi2_data, ups_data, gpu_data = await asyncio.gather(
                     _fetch_proxmox(),
                     run_in_threadpool(list_game_servers),
-                    run_in_threadpool(list_autostart_services),
+                    list_autostart_services(),
                     get_raspberry_pi_stats(),
                     get_raspberry_pi_2_stats(),
                     get_ups_summary(),
