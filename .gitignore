@@ -10,3 +10,9 @@ frontend/.angular/
 backend/__pycache__/
 backend/**/__pycache__/
 backend/*.pyc
+
+# pi-agent: estado persistido do bridge e .env local
+pi-agent/data/
+pi-agent/.env
+__pycache__/
+.pytest_cache/

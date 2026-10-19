@@ -59,6 +59,7 @@ jobs:
             echo "NUT_PASSWORD=${{ secrets.NUT_PASSWORD }}"
             echo "NUT_UPS_NAME=${{ secrets.NUT_UPS_NAME }}"
             echo "GPU_AGENT_URL=${{ secrets.GPU_AGENT_URL }}"
+            echo "RASPBERRY_PI_AGENT_TOKEN=${{ secrets.RASPBERRY_PI_AGENT_TOKEN }}"
           } > "${DEPLOY_DIR}/backend/.env"
 
       - name: Verify Docker

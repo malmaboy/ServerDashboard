@@ -1,0 +1,41 @@
+# Variante do pi-agent para o Raspberry Pi 1 (192.168.0.130), com gestão do
+# bridge Arduino <-> TCP (socat, porta 5555) ligada.
+#
+# Usar INSTEAD of docker-compose.yml (ambos definem o container "pi-stats"):
+#   docker compose -f docker-compose.pi1.yml up -d --build
+#
+# Porque é que precisa de mais acesso ao host do que o agente normal:
+#   network_mode: host  -> o socat do agente fica a ouvir em <pi1>:5555 e o agente
+#                          vê as portas em escuta do host (/proc/net/tcp) sem
+#                          abrir ligações à porta (um connect() faria o socat
+#                          abrir a porta serial, que faz reset ao Arduino).
+#   pid: host           -> o agente deteta/termina um socat já existente no host
+#                          (arrancado por SSH/nohup ou à mão), não só o seu.
+#   /dev + cgroup rules -> acesso a /dev/ttyACM* (major 166) e /dev/ttyUSB*
+#                          (major 188), incluindo Arduinos ligados depois do
+#                          container arrancar. Não é "privileged".
+# O agente já monta o docker.sock (equivalente a root no host), por isso isto
+# não aumenta de forma material a superfície de ataque.
+services:
+  pi-stats:
+    build: .
+    container_name: pi-stats
+    restart: unless-stopped
+    network_mode: host        # a porta 9090 do uvicorn fica diretamente no host
+    pid: host
+    user: root
+    environment:
+      BRIDGE_ENABLED: "true"
+      BRIDGE_PORT: "5555"
+      BRIDGE_BAUD: "9600"
+      BRIDGE_STATE_FILE: /data/bridge.json
+      # Opcional: token partilhado com o backend (RASPBERRY_PI_AGENT_TOKEN).
+      # Definir num ficheiro .env ao lado deste compose: AGENT_TOKEN=...
+      AGENT_TOKEN: ${AGENT_TOKEN:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /dev:/dev
+      - ./data:/data
+    device_cgroup_rules:
+      - "c 166:* rwm"   # ttyACM*
+      - "c 188:* rwm"   # ttyUSB*

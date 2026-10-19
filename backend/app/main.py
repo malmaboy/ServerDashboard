@@ -8,6 +8,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 
+from .arduino_bridge import get_arduino_bridge_status, router as arduino_bridge_router
 from .autostart import list_autostart_services, router as autostart_router
 from .game_servers import list_game_servers, router as game_servers_router
 from .raspberry_pi import (
@@ -38,6 +39,7 @@ app = FastAPI(
 
 app.include_router(game_servers_router)
 app.include_router(autostart_router)
+app.include_router(arduino_bridge_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -144,7 +146,7 @@ async def events(request: Request):
                     logger.info("SSE client disconnected")
                     break
 
-                proxmox_data, game_data, autostart_data, pi_data, pi2_data, ups_data, gpu_data = await asyncio.gather(
+                proxmox_data, game_data, autostart_data, pi_data, pi2_data, ups_data, gpu_data, bridge_data = await asyncio.gather(
                     _fetch_proxmox(),
                     run_in_threadpool(list_game_servers),
                     list_autostart_services(),
@@ -152,6 +154,7 @@ async def events(request: Request):
                     get_raspberry_pi_2_stats(),
                     get_ups_summary(),
                     get_gpu_stats(),
+                    get_arduino_bridge_status(),
                 )
 
                 yield {"event": "proxmox", "data": json.dumps(proxmox_data)}
@@ -161,6 +164,7 @@ async def events(request: Request):
                 yield {"event": "raspberry-pi-2", "data": json.dumps({"raspberryPi2": pi2_data})}
                 yield {"event": "ups", "data": json.dumps({"ups": ups_data})}
                 yield {"event": "gpu", "data": json.dumps({"gpu": gpu_data})}
+                yield {"event": "arduino-bridge", "data": json.dumps({"arduinoBridge": bridge_data})}
 
                 await asyncio.sleep(15)
         except asyncio.CancelledError:

@@ -26,6 +26,9 @@ export class AppComponent implements OnInit, OnDestroy {
   protected pi2ContainerLoading: string | null = null;
   protected ups: UpsSummary | null = null;
   protected gpu: GpuStats | null = null;
+  protected arduinoBridge: ArduinoBridgeStatus | null = null;
+  protected bridgeLoading = false;
+  protected bridgeError: string | null = null;
 
   ngOnInit(): void { this.connectSSE(); }
   ngOnDestroy(): void { this.eventSource?.close(); }
@@ -124,6 +127,37 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ── Arduino bridge (socat no Pi 1) ────────────────────────────────────────
+
+  protected bridgeSocatLabel(b: ArduinoBridgeStatus): string {
+    return b.socatRunning ? 'socat ativo' : 'socat parado';
+  }
+
+  protected bridgeSerialLabel(b: ArduinoBridgeStatus): string {
+    return b.serialPresent ? 'Arduino detetado' : 'Arduino não detetado';
+  }
+
+  protected bridgeSerialTitle(b: ArduinoBridgeStatus): string {
+    return b.serialPresent && b.serialDevices?.length ? b.serialDevices.join(', ') : '';
+  }
+
+  protected toggleBridge(b: ArduinoBridgeStatus): void {
+    if (this.bridgeLoading) return;
+    this.bridgeLoading = true;
+    this.bridgeError = null;
+    const action = b.socatRunning ? 'stop' : 'start';
+    this.http.post<{ arduinoBridge: ArduinoBridgeStatus | null }>(`/api/raspberry-pi/bridge/${action}`, {}).subscribe({
+      next: (res) => {
+        this.arduinoBridge = res.arduinoBridge;
+        this.bridgeLoading = false;
+      },
+      error: (err) => {
+        this.bridgeError = (err?.error?.detail as string | undefined) ?? 'Não foi possível executar a ação no bridge.';
+        this.bridgeLoading = false;
+      }
+    });
+  }
+
   // ── Game servers ──────────────────────────────────────────────────────────
 
   protected toggleGameServer(gs: GameServer): void {
@@ -189,6 +223,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.eventSource.addEventListener('gpu', (e: MessageEvent) => {
       this.zone.run(() => {
         this.gpu = (JSON.parse(e.data) as { gpu: GpuStats | null }).gpu;
+      });
+    });
+
+    this.eventSource.addEventListener('arduino-bridge', (e: MessageEvent) => {
+      this.zone.run(() => {
+        this.arduinoBridge = (JSON.parse(e.data) as { arduinoBridge: ArduinoBridgeStatus | null }).arduinoBridge;
       });
     });
 
@@ -268,6 +308,18 @@ interface UpsSummary {
   temperature: number | null;
   beeperStatus: string | null;
   firmware: string | null;
+}
+
+interface ArduinoBridgeStatus {
+  supported: boolean;
+  state?: 'active' | 'stopped' | 'no_device' | 'unknown';
+  socatRunning?: boolean;
+  serialPresent?: boolean;
+  serialDevices?: string[];
+  port?: number;
+  baud?: number;
+  desired?: boolean;
+  managed?: boolean;
 }
 
 interface GpuStats {

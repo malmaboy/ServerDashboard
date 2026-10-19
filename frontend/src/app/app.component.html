@@ -238,6 +238,34 @@
         </div>
       </div>
     </div>
+
+    <!-- Arduino bridge (socat, porta 5555) — usado pelo GardenAssistant -->
+    <div class="bridge-row" *ngIf="arduinoBridge">
+      <ng-container *ngIf="arduinoBridge.supported; else bridgeUnsupported">
+        <span class="vm-dot" [class.vm-dot--running]="arduinoBridge.socatRunning" [class.vm-dot--stopped]="!arduinoBridge.socatRunning"></span>
+        <span class="vm-name">Arduino bridge</span>
+        <span class="vm-tag" [class.vm-tag--ok]="arduinoBridge.socatRunning" [class.vm-tag--off]="!arduinoBridge.socatRunning">{{ bridgeSocatLabel(arduinoBridge) }}</span>
+        <span class="vm-tag" [class.vm-tag--ok]="arduinoBridge.serialPresent" [class.vm-tag--warn]="!arduinoBridge.serialPresent"
+              [title]="bridgeSerialTitle(arduinoBridge)">{{ bridgeSerialLabel(arduinoBridge) }}</span>
+        <span class="vm-stat">:{{ arduinoBridge.port }} · {{ arduinoBridge.baud }} baud</span>
+        <div class="vm-actions bridge-actions">
+          <button *ngIf="!arduinoBridge.socatRunning" class="vm-btn vm-btn--start"
+            [disabled]="bridgeLoading || !arduinoBridge.serialPresent"
+            [title]="arduinoBridge.serialPresent ? 'Ligar o bridge socat' : 'Arduino não detetado'"
+            (click)="toggleBridge(arduinoBridge)">▶</button>
+          <button *ngIf="arduinoBridge.socatRunning" class="vm-btn vm-btn--stop"
+            [disabled]="bridgeLoading" title="Desligar o bridge socat"
+            (click)="toggleBridge(arduinoBridge)">■</button>
+          <span *ngIf="bridgeLoading" class="vm-spinner">⟳</span>
+        </div>
+      </ng-container>
+      <ng-template #bridgeUnsupported>
+        <span class="vm-dot vm-dot--stopped"></span>
+        <span class="vm-name">Arduino bridge</span>
+        <span class="vm-stat">Gestão indisponível — atualizar o pi-agent do Pi 1 (docker-compose.pi1.yml)</span>
+      </ng-template>
+    </div>
+    <p class="bridge-error" *ngIf="bridgeError">{{ bridgeError }}</p>
   </section>
 
   <!-- Raspberry Pi 2 -->
