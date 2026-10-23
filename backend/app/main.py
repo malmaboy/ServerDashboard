@@ -20,6 +20,7 @@ from .raspberry_pi import (
 from .proxmox.alerts import compute_resource_alerts
 from .proxmox.nodes import control_vm, get_disk_layout, get_lxcs, get_node_status, get_storage, get_vms
 from .proxmox.tasks import get_recent_tasks
+from .pis_summary import get_pis_summary
 from .ups import get_ups_summary
 from .gpu import get_gpu_stats
 
@@ -86,6 +87,11 @@ async def get_proxmox_summary() -> dict:
 @app.get("/api/ups/summary")
 async def get_ups() -> dict:
     return {"ups": await get_ups_summary()}
+
+
+@app.get("/api/pis/summary")
+async def get_pis() -> dict:
+    return await get_pis_summary()
 
 
 @app.get("/api/gpu/summary")

@@ -27,6 +27,19 @@ async def _get_pi_stats(url: str, label: str) -> dict | None:
         return None
 
 
+async def fetch_pi_stats_payload(url: str, timeout: float = 3.0) -> object:
+    """GET ``{url}/stats`` and return the decoded JSON as-is.
+
+    Unlike ``_get_pi_stats`` this does not swallow errors or fill in defaults, so
+    callers can tell "unreachable" apart from "reported zero". Read-only: only
+    the /stats endpoint is ever requested.
+    """
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        r = await client.get(f"{url}/stats")
+        r.raise_for_status()
+        return r.json()
+
+
 async def get_raspberry_pi_stats() -> dict | None:
     return await _get_pi_stats(RASPBERRY_PI_URL, "Raspberry Pi")
 
